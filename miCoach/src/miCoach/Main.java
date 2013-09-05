@@ -1,20 +1,14 @@
 package miCoach;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-import java.util.SortedMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,6 +41,7 @@ public class Main {
 		String storeFile = "/home/gugugs/miCoach_dev/hrmConverted.tcx";
 
 		LinkedHashMap<Date, Double> jsonData = new LinkedHashMap<>();
+		LinkedHashMap<Date, Long> jsonDataDistance = new LinkedHashMap<>();
 		JSONParser parser = new JSONParser();
 
 		try {
@@ -94,7 +89,7 @@ public class Main {
 			jsonDate.setYear(Integer.parseInt(jsonStartDateTimeString
 					.substring(0, 4)));
 			jsonDate.setMonth(Integer.parseInt(jsonStartDateTimeString
-					.substring(5, 7)) - 2);
+					.substring(5, 7)) - 1);
 			jsonDate.setDate(Integer.parseInt(jsonStartDateTimeString
 					.substring(8, 10)));
 			jsonDate.setHours(Integer.parseInt(jsonStartDateTimeString
@@ -120,22 +115,22 @@ public class Main {
 					} else {
 						jsonData.put(jsonCalendar.getTime(), (Double) current.get("Pace"));
 					}
+					
+					if (current.get("Distance") == null) {
+						jsonDataDistance.put(jsonCalendar.getTime(), new Long(0));
+					} else {
+						jsonDataDistance.put(jsonCalendar.getTime(), (Long) current.get("Distance"));
+					}
+					
 					jsonCalendar.add(Calendar.SECOND, 5);
 					seconds += 5;
 					current = iterator.next();
 				} else {
 					jsonData.put(jsonCalendar.getTime(), 0.0);
+					jsonDataDistance.put(jsonCalendar.getTime(), new Long(0));
 					jsonCalendar.add(Calendar.SECOND, 5);
 					seconds += 5;
 				}
-			}
-			
-			int counter = 0;
-			for (Entry<Date, Double> test : jsonData.entrySet()) {
-				System.out.println(counter);
-				System.out.println(test.getKey());
-				System.out.println(test.getValue());
-				counter++;
 			}
 
 			// TCX STUFF!!!!!!!!!!!!
@@ -149,49 +144,50 @@ public class Main {
 				doc.getDocumentElement().normalize();
 			 
 				NodeList nList = doc.getElementsByTagName("Trackpoint");
+				int jsonCounter = 0;
+				Date tcxTime = null;
+				String timeString = null;
+				Node nNode = null;
+				Element eElement = null;
+				for (int temp = 0; temp < nList.getLength(); temp++) {
+					nNode = nList.item(temp);
+					eElement = (Element) nNode;
+					timeString = eElement.getElementsByTagName("Time").item(0).getTextContent();
+					tcxTime = new Date();
+					tcxTime.setYear(Integer.parseInt(timeString.substring(0, 4)));
+					tcxTime.setMonth(Integer.parseInt(timeString.substring(5, 7)) - 1);
+					tcxTime.setDate(Integer.parseInt(timeString.substring(8, 10)));
+					tcxTime.setHours(Integer.parseInt(timeString.substring(11, 13)) + 2);
+					tcxTime.setMinutes(Integer.parseInt(timeString.substring(14, 16)));
+					tcxTime.setSeconds(Integer.parseInt(timeString.substring(17, 19)));
+		
+					while (((Entry<Date, Double>) jsonData.entrySet().toArray()[jsonCounter]).getKey().before(tcxTime)) {
+						jsonCounter++;
+					}
+					
+					System.out.println("counter " + jsonCounter);
+					System.out.println("tcx date " + tcxTime);
+					System.out.println("anderes " + ((Entry<Date, Double>) jsonData.entrySet().toArray()[jsonCounter]).getKey());
 				
+					eElement.getElementsByTagName("Speed").item(0).setTextContent(String.valueOf(((Entry<Date, Double>) jsonData.entrySet().toArray()[jsonCounter]).getValue()));
+					eElement.getElementsByTagName("DistanceMeters").item(0).setTextContent(String.valueOf(((Entry<Date, Long>) jsonDataDistance.entrySet().toArray()[jsonCounter]).getValue() / 10));
 				
-				
-//				for (int temp = 0; temp < nList.getLength(); temp++) {
-//					Node nNode = nList.item(temp);
-//			 
-//					Element eElement = (Element) nNode;
-//					System.out.println("Time : " + eElement.getElementsByTagName("Time").item(0).getTextContent());
-//				}
-				
-				Node nNode = nList.item(0);
-				Element eElement = (Element) nNode;
-				String timeString = eElement.getElementsByTagName("Time").item(0).getTextContent();
-				Date tcxTime = new Date();
-				tcxTime.setYear(Integer.parseInt(timeString.substring(0, 4)));
-				tcxTime.setMonth(Integer.parseInt(timeString.substring(5, 7)));
-				tcxTime.setDate(Integer.parseInt(timeString.substring(8, 10)));
-				tcxTime.setHours(Integer.parseInt(timeString.substring(11, 13)));
-				tcxTime.setMinutes(Integer.parseInt(timeString.substring(14, 16)));
-				tcxTime.setSeconds(Integer.parseInt(timeString.substring(17, 19)));
-				
-				
+				}				
 				
 				TransformerFactory transformerFactory = TransformerFactory.newInstance();
 				Transformer transformer = transformerFactory.newTransformer();
 				DOMSource source = new DOMSource(doc);
 				StreamResult result = new StreamResult(new File(storeFile));
-		 
-				// Output to console for testing
-				// StreamResult result = new StreamResult(System.out);
-		 
 				transformer.transform(source, result);
-		 
 				System.out.println("File saved!");
+				
 			} catch (ParserConfigurationException e) {
 				e.printStackTrace();
 			} catch (SAXException e) {
 				e.printStackTrace();
 			} catch (TransformerConfigurationException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (TransformerException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
