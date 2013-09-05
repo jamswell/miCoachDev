@@ -3,5 +3,13 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="/home/gugugs/Downloads/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/jdom-2.0.5.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/jdom-2.0.5-contrib.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/jdom-2.0.5-javadoc.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/jdom-2.0.5-junit.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/jdom-2.0.5-sources.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/lib/jaxen-1.1.6.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/lib/xercesImpl.jar"/>
+	<classpathentry kind="lib" path="/home/gugugs/Downloads/jdom-2.0.5/lib/xml-apis.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
