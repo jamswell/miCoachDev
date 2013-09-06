@@ -24,13 +24,14 @@ import org.json.simple.parser.ParseException;
 public class Main {
 	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
-		String jsonFile = "/home/gugugs/miCoach_dev/json/miCoach20130904_185418.json";
+		String jsonFile = "/home/gugugs/miCoach_dev/bonsweiher/json";
 		// String tcxFile =
 		// "/home/gugugs/miCoach_dev/04.09.2013 18_05_30_history.tcx";
-		String storeFile = "/home/gugugs/miCoach_dev/hrmConverted.hrm";
-		String hrmFile = "/home/gugugs/miCoach_dev/04.09.2013 18_05_30_history.hrm";
+		String storeFile = "/home/gugugs/miCoach_dev/bonsweiher/converted.hrm";
+		String hrmFile = "/home/gugugs/miCoach_dev/bonsweiher/bonsweiher.hrm";
 
 		LinkedHashMap<Integer, Double> jsonData = new LinkedHashMap<>();
+		LinkedHashMap<Integer, Integer> jsonDataDistance = new LinkedHashMap<>();
 		JSONParser parser = new JSONParser();
 		StringBuffer writeBuffer = new StringBuffer();
 
@@ -88,6 +89,9 @@ public class Main {
 					.substring(14, 16)));
 			jsonDate.setSeconds(Integer.parseInt(jsonStartDateTimeString
 					.substring(17, 19)));
+			
+			System.out.println(jsonDate);
+			System.out.println(hrmStartDate);
 
 			JSONArray msg = (JSONArray) jsonObject
 					.get("CompletedWorkoutDataPoints");
@@ -102,10 +106,16 @@ public class Main {
 				secondCounter++;
 				jsonCalendar.add(Calendar.SECOND, 5);
 			}
+			
+			System.out.println("secondCounter " + secondCounter);
 
 			int seconds = ((Double) current.get("TimeFromStart")).intValue();
+			System.out.println("iterator " + msg.size());
 			while (iterator.hasNext()) {
-				if (((Double) current.get("TimeFromStart")).intValue() == seconds) {
+				System.out.println("seconds " + seconds);
+				System.out.println("timefromstart " + (((Double) current.get("TimeFromStart")).intValue()));
+				System.out.println("value " + (Double) current.get("Pace"));
+				if (((Double) current.get("TimeFromStart")).intValue() <= seconds) {
 					if (current.get("Pace") == null) {
 						jsonData.put(seconds, 0.0);
 					} else {
@@ -118,13 +128,25 @@ public class Main {
 					seconds += 5;
 				}
 			}
+			
+			System.out.println("werte geschrieben");
 
-//			int counter = 0;
-//			for (Entry<Integer, Double> test : jsonData.entrySet()) {
-//				System.out.println(counter);
-//				System.out.println(test.getKey());
-//				System.out.println(test.getValue());
-//				counter++;
+//			int first = 0;
+//			int second = 0;
+//			int key = 0;
+//			for (int i = 1; i < jsonData.size(); i++) {
+//				key = ((Entry<Integer, Long>) jsonData.entrySet().toArray()[i - 1]).getKey();
+//				first = ((Entry<Integer, Long>) jsonData.entrySet().toArray()[i - 1]).getValue().intValue();
+//				second = ((Entry<Integer, Long>) jsonData.entrySet().toArray()[i]).getValue().intValue();
+//				System.out.println("first" + first);
+//				System.out.println("second" + second);
+//				System.out.println("result" + (second - first));
+//				System.out.println(second);
+//				if (first == 0 || second == 0) {
+//					jsonDataDistance.put(key, 0);
+//				} else {
+//					jsonDataDistance.put(key, (second - first));
+//				}
 //			}
 
 			// TCX STUFF!!!!!!!!!!!!
@@ -204,7 +226,7 @@ public class Main {
 			}
 
 			int digitCounter = 0;
-			Double currentPace = null;
+			Double currentPace = 0.0;
 			while ((line = br.readLine()) != null) {
 				digitCounter = 0;
 				while (Character.isDigit(line.toCharArray()[digitCounter])) {
@@ -215,8 +237,7 @@ public class Main {
 				writeBuffer.append("\t");
 				currentPace = jsonData.get(secondCounter);
 				if (currentPace != 0) {
-					writeBuffer
-							.append(currentPace);
+					writeBuffer.append((60 / currentPace) * 1000);
 				} else {
 					writeBuffer.append("0.0");
 				}
@@ -227,7 +248,7 @@ public class Main {
 			br.close();
 			fis.close();
 
-//			System.out.println(writeBuffer.toString());
+			System.out.println(writeBuffer.toString());
 
 			FileWriter fstream = new FileWriter(storeFile);
 			BufferedWriter out = new BufferedWriter(fstream);
