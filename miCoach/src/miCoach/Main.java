@@ -13,25 +13,20 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Map.Entry;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-@SuppressWarnings("unchecked")
 public class Main {
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({ "deprecation", "unchecked" })
 	public static void main(String[] args) {
-		String jsonFile = "/home/gugugs/miCoach_dev/bonsweiher/json";
-		// String tcxFile =
-		// "/home/gugugs/miCoach_dev/04.09.2013 18_05_30_history.tcx";
-		String storeFile = "/home/gugugs/miCoach_dev/bonsweiher/converted.hrm";
-		String hrmFile = "/home/gugugs/miCoach_dev/bonsweiher/bonsweiher.hrm";
+		String jsonFile = args[0];
+		String storeFile = "converted.hrm";
+		String hrmFile = args[1];
 
 		LinkedHashMap<Integer, Double> jsonData = new LinkedHashMap<>();
-		LinkedHashMap<Integer, Integer> jsonDataDistance = new LinkedHashMap<>();
 		JSONParser parser = new JSONParser();
 		StringBuffer writeBuffer = new StringBuffer();
 
@@ -130,86 +125,6 @@ public class Main {
 			}
 			
 			System.out.println("werte geschrieben");
-
-//			int first = 0;
-//			int second = 0;
-//			int key = 0;
-//			for (int i = 1; i < jsonData.size(); i++) {
-//				key = ((Entry<Integer, Long>) jsonData.entrySet().toArray()[i - 1]).getKey();
-//				first = ((Entry<Integer, Long>) jsonData.entrySet().toArray()[i - 1]).getValue().intValue();
-//				second = ((Entry<Integer, Long>) jsonData.entrySet().toArray()[i]).getValue().intValue();
-//				System.out.println("first" + first);
-//				System.out.println("second" + second);
-//				System.out.println("result" + (second - first));
-//				System.out.println(second);
-//				if (first == 0 || second == 0) {
-//					jsonDataDistance.put(key, 0);
-//				} else {
-//					jsonDataDistance.put(key, (second - first));
-//				}
-//			}
-
-			// TCX STUFF!!!!!!!!!!!!
-			// try {
-			// File fXmlFile = new File(tcxFile);
-			// DocumentBuilderFactory dbFactory =
-			// DocumentBuilderFactory.newInstance();
-			// DocumentBuilder dBuilder;
-			// dBuilder = dbFactory.newDocumentBuilder();
-			// Document doc = dBuilder.parse(fXmlFile);
-			//
-			// doc.getDocumentElement().normalize();
-			//
-			// NodeList nList = doc.getElementsByTagName("Trackpoint");
-			//
-
-			// for (int temp = 0; temp < nList.getLength(); temp++) {
-			// Node nNode = nList.item(temp);
-			//
-			// Element eElement = (Element) nNode;
-			// System.out.println("Time : " +
-			// eElement.getElementsByTagName("Time").item(0).getTextContent());
-			// }
-
-			// Node nNode = nList.item(0);
-			// Element eElement = (Element) nNode;
-			// String timeString =
-			// eElement.getElementsByTagName("Time").item(0).getTextContent();
-			// Date tcxTime = new Date();
-			// tcxTime.setYear(Integer.parseInt(timeString.substring(0, 4)));
-			// tcxTime.setMonth(Integer.parseInt(timeString.substring(5, 7)));
-			// tcxTime.setDate(Integer.parseInt(timeString.substring(8, 10)));
-			// tcxTime.setHours(Integer.parseInt(timeString.substring(11, 13)));
-			// tcxTime.setMinutes(Integer.parseInt(timeString.substring(14,
-			// 16)));
-			// tcxTime.setSeconds(Integer.parseInt(timeString.substring(17,
-			// 19)));
-			//
-			//
-			//
-			// TransformerFactory transformerFactory =
-			// TransformerFactory.newInstance();
-			// Transformer transformer = transformerFactory.newTransformer();
-			// DOMSource source = new DOMSource(doc);
-			// StreamResult result = new StreamResult(new File(storeFile));
-
-			// Output to console for testing
-			// StreamResult result = new StreamResult(System.out);
-
-			// transformer.transform(source, result);
-			//
-			// System.out.println("File saved!");
-			// } catch (ParserConfigurationException e) {
-			// e.printStackTrace();
-			// } catch (SAXException e) {
-			// e.printStackTrace();
-			// } catch (TransformerConfigurationException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// } catch (TransformerException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
 
 			// HRM STUFF!!!!!!!!!!!
 			fis = new FileInputStream(hrmFile);
