@@ -1,0 +1,5 @@
+22.09.2010 - Version 1.0.0
+
++ Verbesserungen am Garmin TCX Import
++ Import von VDO Z3 / PC-Sport Trainings-Ergebnissen (*.xml)
++ Das Programm wurde auf seine haupts‰chliche Verwendung, der Konvertierung von Trainings-Ergebnissen, reduziert. Die grafische Anzeige bzw. Auswertung wurde dabei komplett entfernt. Groﬂe Teile der graphischen Auswertung sind nun Bestandteil von http://www.ergoplanet.de. Die alte Version mit grafischer Anzeige steht weiterhin zum Download bereit, wird aber nicht mehr weiterenwickelt.
