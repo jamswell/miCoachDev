@@ -2,34 +2,39 @@ package miCoach;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map.Entry;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class Main {
-	@SuppressWarnings({ "deprecation", "unchecked" })
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
-		String jsonFile = args[0];
+		String xmlFile = args[0];
 		String storeFile = "converted.hrm";
 		String hrmFile = args[1];
 
-		LinkedHashMap<Integer, Double> jsonData = new LinkedHashMap<>();
-		JSONParser parser = new JSONParser();
+		LinkedHashMap<Integer, Double> xmlData = new LinkedHashMap<>();
 		StringBuffer writeBuffer = new StringBuffer();
 
+		// Datum von hrm file lesen
 		try {
 			FileInputStream fis = new FileInputStream(hrmFile);
 			BufferedReader br = new BufferedReader(new InputStreamReader(fis,
@@ -53,7 +58,7 @@ public class Main {
 			Date hrmStartDate = new Date();
 			hrmStartDate.setYear(Integer.parseInt(hrmDate.substring(0, 4)));
 			hrmStartDate
-					.setMonth(Integer.parseInt(hrmDate.substring(4, 6)) - 2);
+					.setMonth(Integer.parseInt(hrmDate.substring(4, 6)) - 1);
 			hrmStartDate.setDate(Integer.parseInt(hrmDate.substring(6, 8)));
 
 			hrmStartDate
@@ -63,70 +68,82 @@ public class Main {
 			hrmStartDate.setSeconds(Integer.parseInt(hrmStartTime.substring(6,
 					8)));
 
-			// JSON STUFF!!!!!!!!!!!!!
-			Object obj;
-			obj = parser.parse(new FileReader(jsonFile));
-			JSONObject jsonObject = (JSONObject) obj;
+			// xml stuff
+			File fXmlFile = new File(xmlFile);
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory
+					.newInstance();
+			DocumentBuilder dBuilder;
+			dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(fXmlFile);
 
-			JSONObject workoutInfo = (JSONObject) jsonObject.get("WorkoutInfo");
-			String jsonStartDateTimeString = (String) workoutInfo
-					.get("StartDateTime");
-			Date jsonDate = new Date();
-			jsonDate.setYear(Integer.parseInt(jsonStartDateTimeString
-					.substring(0, 4)));
-			jsonDate.setMonth(Integer.parseInt(jsonStartDateTimeString
-					.substring(5, 7)) - 2);
-			jsonDate.setDate(Integer.parseInt(jsonStartDateTimeString
-					.substring(8, 10)));
-			jsonDate.setHours(Integer.parseInt(jsonStartDateTimeString
-					.substring(11, 13)));
-			jsonDate.setMinutes(Integer.parseInt(jsonStartDateTimeString
-					.substring(14, 16)));
-			jsonDate.setSeconds(Integer.parseInt(jsonStartDateTimeString
-					.substring(17, 19)));
-			
-			System.out.println(jsonDate);
-			System.out.println(hrmStartDate);
+			doc.getDocumentElement().normalize();
 
-			JSONArray msg = (JSONArray) jsonObject
-					.get("CompletedWorkoutDataPoints");
+			// Datum von xml einlesen
+			Date xmlDate = new Date();
+			xmlDate.setYear(Integer.parseInt(doc
+					.getElementsByTagName("StartDateTime").item(0)
+					.getTextContent().substring(0, 4)));
+			xmlDate.setMonth(Integer.parseInt(doc
+					.getElementsByTagName("StartDateTime").item(0)
+					.getTextContent().substring(5, 7)) - 1);
+			xmlDate.setDate(Integer.parseInt(doc
+					.getElementsByTagName("StartDateTime").item(0)
+					.getTextContent().substring(8, 10)));
 
-			Iterator<JSONObject> iterator = msg.iterator();
-			JSONObject current = iterator.next();
-			Calendar jsonCalendar = Calendar.getInstance();
-			jsonCalendar.setTime(jsonDate);
+			xmlDate.setHours(Integer.parseInt(doc
+					.getElementsByTagName("StartDateTime").item(0)
+					.getTextContent().substring(11, 13)));
+			xmlDate.setMinutes(Integer.parseInt(doc
+					.getElementsByTagName("StartDateTime").item(0)
+					.getTextContent().substring(14, 16)));
+			xmlDate.setSeconds(Integer.parseInt(doc
+					.getElementsByTagName("StartDateTime").item(0)
+					.getTextContent().substring(17, 19)));
 
+			// Zeitdifferenz herausfinden
+			Calendar xmlCalendar = Calendar.getInstance();
+			xmlCalendar.setTime(xmlDate);
 			int secondCounter = 0;
-			while (jsonCalendar.getTime().before(hrmStartDate)) {
-				secondCounter++;
-				jsonCalendar.add(Calendar.SECOND, 5);
+			while (xmlCalendar.getTime().before(hrmStartDate)) {
+				xmlCalendar.add(Calendar.SECOND, 5);
+				secondCounter += 5;
 			}
-			
-			System.out.println("secondCounter " + secondCounter);
 
-			int seconds = ((Double) current.get("TimeFromStart")).intValue();
-			System.out.println("iterator " + msg.size());
-			while (iterator.hasNext()) {
-				System.out.println("seconds " + seconds);
-				System.out.println("timefromstart " + (((Double) current.get("TimeFromStart")).intValue()));
-				System.out.println("value " + (Double) current.get("Pace"));
-				if (((Double) current.get("TimeFromStart")).intValue() <= seconds) {
-					if (current.get("Pace") == null) {
-						jsonData.put(seconds, 0.0);
-					} else {
-						jsonData.put(seconds, (Double) current.get("Pace"));
-					}
-					seconds += 5;
-					current = iterator.next();
+			// Punkte speichern
+			NodeList nList = doc
+					.getElementsByTagName("CompletedWorkoutDataPoint");
+			int currentTime = 0;
+			Node nNode = null;
+			Element eElement = null;
+			int seconds = 0;
+			int counter = 0;
+			while (counter < nList.getLength()) {
+				nNode = nList.item(counter);
+				eElement = (Element) nNode;
+
+				currentTime = ((Double) Double.parseDouble(eElement
+						.getElementsByTagName("TimeFromStart").item(0)
+						.getTextContent())).intValue();
+
+				if (currentTime <= seconds) {
+					xmlData.put(
+							seconds,
+							(Double) Double.parseDouble(eElement
+									.getElementsByTagName("AverageSpeed")
+									.item(0).getTextContent()));
+					counter++;
 				} else {
-					jsonData.put(seconds, 0.0);
-					seconds += 5;
+					xmlData.put(seconds, 0.0);
 				}
+				seconds += 5;
 			}
-			
-			System.out.println("werte geschrieben");
 
-			// HRM STUFF!!!!!!!!!!!
+			for (Entry<Integer, Double> test : xmlData.entrySet()) {
+				System.out.println(test.getKey());
+				System.out.println(test.getValue());
+			}
+
+			// HRM neu bauen
 			fis = new FileInputStream(hrmFile);
 			br = new BufferedReader(new InputStreamReader(fis,
 					Charset.forName("UTF-8")));
@@ -150,9 +167,9 @@ public class Main {
 				}
 
 				writeBuffer.append("\t");
-				currentPace = jsonData.get(secondCounter);
+				currentPace = xmlData.get(secondCounter);
 				if (currentPace != 0) {
-					writeBuffer.append((60 / currentPace) * 1000);
+					writeBuffer.append((((currentPace / 1000) * 60) * 60) * 10);
 				} else {
 					writeBuffer.append("0.0");
 				}
@@ -175,7 +192,9 @@ public class Main {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (ParseException e) {
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
 			e.printStackTrace();
 		}
 	}
