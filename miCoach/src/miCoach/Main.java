@@ -129,7 +129,7 @@ public class Main {
 					xmlData.put(
 							seconds,
 							(Double) Double.parseDouble(eElement
-									.getElementsByTagName("AverageSpeed")
+									.getElementsByTagName("Pace")
 									.item(0).getTextContent()));
 					counter++;
 				} else {
@@ -169,7 +169,7 @@ public class Main {
 				writeBuffer.append("\t");
 				currentPace = xmlData.get(secondCounter);
 				if (currentPace != 0) {
-					writeBuffer.append((((currentPace / 1000) * 60) * 60) * 10);
+					writeBuffer.append((((1 / currentPace) * 60) * 60) * 10);
 				} else {
 					writeBuffer.append("0.0");
 				}
