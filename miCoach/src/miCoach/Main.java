@@ -17,6 +17,11 @@ import java.util.Map.Entry;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -27,166 +32,166 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
-		String xmlFile = args[0];
-		String storeFile = "converted.hrm";
-		String hrmFile = args[1];
+		String xmlFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash/testing/squash.xml";
+		String storeFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash/testing/converted.tcx";
+		String tcxFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash/testing/garmin.tcx";
 
-		LinkedHashMap<Integer, Double> xmlData = new LinkedHashMap<>();
+		LinkedHashMap<Date, Double> xmlData = new LinkedHashMap<>();
+		LinkedHashMap<Date, Double> xmlDataDistance = new LinkedHashMap<>();
 		StringBuffer writeBuffer = new StringBuffer();
 
-		// Datum von hrm file lesen
 		try {
-			FileInputStream fis = new FileInputStream(hrmFile);
-			BufferedReader br = new BufferedReader(new InputStreamReader(fis,
-					Charset.forName("UTF-8")));
-			String line = null;
-			String hrmStartTime = null;
-			String hrmDate = null;
-			while ((line = br.readLine()) != null) {
-				if (line.length() > 12) {
-					if (line.substring(0, 4).equals("Date")) {
-						hrmDate = line.substring(5, 13);
-					}
-					if (line.substring(0, 9).equals("StartTime")) {
-						hrmStartTime = line.substring(10, 20);
-					}
-				}
-			}
-			br.close();
-			fis.close();
-
-			Date hrmStartDate = new Date();
-			hrmStartDate.setYear(Integer.parseInt(hrmDate.substring(0, 4)));
-			hrmStartDate
-					.setMonth(Integer.parseInt(hrmDate.substring(4, 6)) - 1);
-			hrmStartDate.setDate(Integer.parseInt(hrmDate.substring(6, 8)));
-
-			hrmStartDate
-					.setHours(Integer.parseInt(hrmStartTime.substring(0, 2)));
-			hrmStartDate.setMinutes(Integer.parseInt(hrmStartTime.substring(3,
-					5)));
-			hrmStartDate.setSeconds(Integer.parseInt(hrmStartTime.substring(6,
-					8)));
-
 			// xml stuff
 			File fXmlFile = new File(xmlFile);
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory
 					.newInstance();
-			DocumentBuilder dBuilder;
-			dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.parse(fXmlFile);
-
-			doc.getDocumentElement().normalize();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document xmlDoc = dBuilder.parse(fXmlFile);
+			xmlDoc.getDocumentElement().normalize();
 
 			// Datum von xml einlesen
 			Date xmlDate = new Date();
-			xmlDate.setYear(Integer.parseInt(doc
+			xmlDate.setYear(Integer.parseInt(xmlDoc
 					.getElementsByTagName("StartDateTime").item(0)
 					.getTextContent().substring(0, 4)));
-			xmlDate.setMonth(Integer.parseInt(doc
+			xmlDate.setMonth(Integer.parseInt(xmlDoc
 					.getElementsByTagName("StartDateTime").item(0)
 					.getTextContent().substring(5, 7)) - 1);
-			xmlDate.setDate(Integer.parseInt(doc
+			xmlDate.setDate(Integer.parseInt(xmlDoc
 					.getElementsByTagName("StartDateTime").item(0)
 					.getTextContent().substring(8, 10)));
 
-			xmlDate.setHours(Integer.parseInt(doc
+			xmlDate.setHours(Integer.parseInt(xmlDoc
 					.getElementsByTagName("StartDateTime").item(0)
 					.getTextContent().substring(11, 13)));
-			xmlDate.setMinutes(Integer.parseInt(doc
+			xmlDate.setMinutes(Integer.parseInt(xmlDoc
 					.getElementsByTagName("StartDateTime").item(0)
 					.getTextContent().substring(14, 16)));
-			xmlDate.setSeconds(Integer.parseInt(doc
+			xmlDate.setSeconds(Integer.parseInt(xmlDoc
 					.getElementsByTagName("StartDateTime").item(0)
 					.getTextContent().substring(17, 19)));
 
-			// Zeitdifferenz herausfinden
-			Calendar xmlCalendar = Calendar.getInstance();
-			xmlCalendar.setTime(xmlDate);
-			int secondCounter = 0;
-			while (xmlCalendar.getTime().before(hrmStartDate)) {
-				xmlCalendar.add(Calendar.SECOND, 5);
-				secondCounter += 5;
-			}
+			Calendar xmlDateCalendar = Calendar.getInstance();
+			xmlDateCalendar.setTime(xmlDate);
 
-			// Punkte speichern
-			NodeList nList = doc
+			// // Punkte speichern
+			NodeList nList = xmlDoc
 					.getElementsByTagName("CompletedWorkoutDataPoint");
-			int currentTime = 0;
+			int currentSeconds = 0;
 			Node nNode = null;
 			Element eElement = null;
+			Element speedArrayElement = null;
 			int seconds = 0;
 			int counter = 0;
 			while (counter < nList.getLength()) {
 				nNode = nList.item(counter);
 				eElement = (Element) nNode;
 
-				currentTime = ((Double) Double.parseDouble(eElement
+				currentSeconds = ((Double) Double.parseDouble(eElement
 						.getElementsByTagName("TimeFromStart").item(0)
 						.getTextContent())).intValue();
 
-				if (currentTime <= seconds) {
-					xmlData.put(
-							seconds,
-							(Double) Double.parseDouble(eElement
-									.getElementsByTagName("Pace")
-									.item(0).getTextContent()));
-					counter++;
-				} else {
-					xmlData.put(seconds, 0.0);
+				while (seconds != currentSeconds) {
+					xmlData.put(xmlDateCalendar.getTime(), 0.0);
+					xmlDateCalendar.add(Calendar.SECOND, 1);
+					seconds++;
 				}
-				seconds += 5;
+
+				speedArrayElement = (Element) (eElement
+						.getElementsByTagName("SpeedArray").item(0));
+
+				xmlData.put(xmlDateCalendar.getTime(), Double
+						.parseDouble((speedArrayElement.getElementsByTagName(
+								"decimal").item(0).getTextContent())));
+				xmlDateCalendar.add(Calendar.SECOND, 1);
+				seconds++;
+
+				xmlData.put(xmlDateCalendar.getTime(), Double
+						.parseDouble((speedArrayElement.getElementsByTagName(
+								"decimal").item(1).getTextContent())));
+				xmlDateCalendar.add(Calendar.SECOND, 1);
+				seconds++;
+
+				xmlData.put(xmlDateCalendar.getTime(), Double
+						.parseDouble((speedArrayElement.getElementsByTagName(
+								"decimal").item(2).getTextContent())));
+				xmlDateCalendar.add(Calendar.SECOND, 1);
+				seconds++;
+
+				xmlData.put(xmlDateCalendar.getTime(), Double
+						.parseDouble((speedArrayElement.getElementsByTagName(
+								"decimal").item(3).getTextContent())));
+				xmlDateCalendar.add(Calendar.SECOND, 1);
+				seconds++;
+
+				xmlData.put(xmlDateCalendar.getTime(), Double
+						.parseDouble((speedArrayElement.getElementsByTagName(
+								"decimal").item(4).getTextContent())));
+				xmlDateCalendar.add(Calendar.SECOND, 1);
+				seconds++;
+
+				counter++;
 			}
 
-			for (Entry<Integer, Double> test : xmlData.entrySet()) {
-				System.out.println(test.getKey());
-				System.out.println(test.getValue());
-			}
+			// tcx Stuff
+			File ftcxFile = new File(tcxFile);
+			dbFactory = DocumentBuilderFactory.newInstance();
+			dBuilder = dbFactory.newDocumentBuilder();
+			Document tcxDoc = dBuilder.parse(ftcxFile);
 
-			// HRM neu bauen
-			fis = new FileInputStream(hrmFile);
-			br = new BufferedReader(new InputStreamReader(fis,
-					Charset.forName("UTF-8")));
-			line = null;
-			while ((line = br.readLine()) != null) {
-				writeBuffer.append(line + "\n");
-				if (line.length() > 7) {
-					if (line.substring(0, 8).equals("[HRData]")) {
+			// Punkte speichern
+			tcxDoc.getDocumentElement().normalize();
+			nList = tcxDoc.getElementsByTagName("Trackpoint");
+			Date tcxDate = new Date();
+			counter = 0;
+			while (counter < nList.getLength()) {
+				nNode = nList.item(counter);
+				eElement = (Element) nNode;
+
+				tcxDate.setYear(Integer.parseInt(eElement
+						.getElementsByTagName("Time").item(0).getTextContent()
+						.substring(0, 4)));
+				tcxDate.setMonth(Integer.parseInt(eElement
+						.getElementsByTagName("Time").item(0).getTextContent()
+						.substring(5, 7)) - 1);
+				tcxDate.setDate(Integer.parseInt(eElement
+						.getElementsByTagName("Time").item(0).getTextContent()
+						.substring(8, 10)));
+				tcxDate.setHours(Integer.parseInt(eElement
+						.getElementsByTagName("Time").item(0).getTextContent()
+						.substring(11, 13)) + 2);
+				tcxDate.setMinutes(Integer.parseInt(eElement
+						.getElementsByTagName("Time").item(0).getTextContent()
+						.substring(14, 16)));
+				tcxDate.setSeconds(Integer.parseInt(eElement
+						.getElementsByTagName("Time").item(0).getTextContent()
+						.substring(17, 19)));
+				
+				System.out.println(tcxDate);
+
+				
+				for (Entry currentEntry : xmlData.entrySet()) {
+					if (((Date)currentEntry.getKey()).compareTo(tcxDate) == 1) {
+						eElement.getElementsByTagName("Speed").item(0)
+						.setTextContent(currentEntry.getValue().toString());
+						System.out.println("yes");
 						break;
 					}
 				}
+				
+
+				counter++;
 			}
 
-			int digitCounter = 0;
-			Double currentPace = 0.0;
-			while ((line = br.readLine()) != null) {
-				digitCounter = 0;
-				while (Character.isDigit(line.toCharArray()[digitCounter])) {
-					writeBuffer.append(line.toCharArray()[digitCounter]);
-					digitCounter++;
-				}
+			// write the content into xml file
+			TransformerFactory transformerFactory = TransformerFactory
+					.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			DOMSource source = new DOMSource(tcxDoc);
+			StreamResult result = new StreamResult(new File(storeFile));
+			transformer.transform(source, result);
 
-				writeBuffer.append("\t");
-				currentPace = xmlData.get(secondCounter);
-				if (currentPace != 0) {
-					writeBuffer.append((((1 / currentPace) * 60) * 60) * 10);
-				} else {
-					writeBuffer.append("0.0");
-				}
-				writeBuffer.append("\n");
-				secondCounter += 5;
-
-			}
-			br.close();
-			fis.close();
-
-			System.out.println(writeBuffer.toString());
-
-			FileWriter fstream = new FileWriter(storeFile);
-			BufferedWriter out = new BufferedWriter(fstream);
-			out.write(writeBuffer.toString());
-			out.close();
-			fstream.close();
+			System.out.println("File saved!");
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -195,6 +200,8 @@ public class Main {
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (TransformerException e) {
 			e.printStackTrace();
 		}
 	}
