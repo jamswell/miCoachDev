@@ -9,8 +9,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
@@ -30,168 +33,114 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class Main {
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({ "deprecation", "rawtypes" })
 	public static void main(String[] args) {
-		String xmlFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash/testing/squash.xml";
-		String storeFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash/testing/converted.tcx";
-		String tcxFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash/testing/garmin.tcx";
+		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/badminton/micoach.tcx";
+		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/badminton/converted.tcx";
+		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/badminton/garmin.tcx";
 
-		LinkedHashMap<Date, Double> xmlData = new LinkedHashMap<>();
-		LinkedHashMap<Date, Double> xmlDataDistance = new LinkedHashMap<>();
-		StringBuffer writeBuffer = new StringBuffer();
+		// String miCoachFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/badminton/micoach.tcx";
+		// String storeFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/badminton/converted.tcx";
+		// String garminFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/badminton/garmin.tcx";
+
+		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 
 		try {
-			// xml stuff
-			File fXmlFile = new File(xmlFile);
+			// make builders
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory
 					.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			Document xmlDoc = dBuilder.parse(fXmlFile);
-			xmlDoc.getDocumentElement().normalize();
+			File xmlGarminFile = new File(garminFile);
+			File xmlMiCoachFile = new File(miCoachFile);
+			Document garminDoc = dBuilder.parse(xmlGarminFile);
+			Document miCoachDoc = dBuilder.parse(xmlMiCoachFile);
+			garminDoc.getDocumentElement().normalize();
+			miCoachDoc.getDocumentElement().normalize();
 
-			// Datum von xml einlesen
-			Date xmlDate = new Date();
-			xmlDate.setYear(Integer.parseInt(xmlDoc
-					.getElementsByTagName("StartDateTime").item(0)
-					.getTextContent().substring(0, 4)));
-			xmlDate.setMonth(Integer.parseInt(xmlDoc
-					.getElementsByTagName("StartDateTime").item(0)
-					.getTextContent().substring(5, 7)) - 1);
-			xmlDate.setDate(Integer.parseInt(xmlDoc
-					.getElementsByTagName("StartDateTime").item(0)
-					.getTextContent().substring(8, 10)));
-
-			xmlDate.setHours(Integer.parseInt(xmlDoc
-					.getElementsByTagName("StartDateTime").item(0)
-					.getTextContent().substring(11, 13)));
-			xmlDate.setMinutes(Integer.parseInt(xmlDoc
-					.getElementsByTagName("StartDateTime").item(0)
-					.getTextContent().substring(14, 16)));
-			xmlDate.setSeconds(Integer.parseInt(xmlDoc
-					.getElementsByTagName("StartDateTime").item(0)
-					.getTextContent().substring(17, 19)));
-
-			Calendar xmlDateCalendar = Calendar.getInstance();
-			xmlDateCalendar.setTime(xmlDate);
-
-			// // Punkte speichern
-			NodeList nList = xmlDoc
-					.getElementsByTagName("CompletedWorkoutDataPoint");
-			int currentSeconds = 0;
-			Node nNode = null;
-			Element eElement = null;
-			Element speedArrayElement = null;
-			int seconds = 0;
+			// get heartrate Data
+			NodeList trackpointNodeList = garminDoc
+					.getElementsByTagName("Trackpoint");
 			int counter = 0;
-			while (counter < nList.getLength()) {
-				nNode = nList.item(counter);
-				eElement = (Element) nNode;
+			int year, month, day, hours, minutes, seconds, heartrate;
+			Calendar calendar = Calendar.getInstance();
+			while (counter < trackpointNodeList.getLength()) {
+				Element currentElement = (Element) trackpointNodeList
+						.item(counter);
+				String dateString = currentElement.getElementsByTagName("Time")
+						.item(0).getTextContent();
+				year = Integer.parseInt(dateString.substring(0, 4));
+				month = Integer.parseInt(dateString.substring(5, 7)) - 1;
+				day = Integer.parseInt(dateString.substring(8, 10));
+				hours = Integer.parseInt(dateString.substring(11, 13)) + 2;
+				minutes = Integer.parseInt(dateString.substring(14, 16));
+				seconds = Integer.parseInt(dateString.substring(17, 19));
+				calendar.set(year, month, day, hours, minutes, seconds);
 
-				currentSeconds = ((Double) Double.parseDouble(eElement
-						.getElementsByTagName("TimeFromStart").item(0)
-						.getTextContent())).intValue();
+				heartrate = Integer
+						.parseInt(((Element) currentElement
+								.getElementsByTagName("HeartRateBpm").item(0))
+								.getElementsByTagName("Value").item(0)
+								.getTextContent());
 
-				while (seconds != currentSeconds) {
-					xmlData.put(xmlDateCalendar.getTime(), 0.0);
-					xmlDateCalendar.add(Calendar.SECOND, 1);
+				heartRateData.put(calendar.getTime(), heartrate);
+				counter++;
+			}
+
+			// heartrate data umwandlen fuer pro sekunde
+			Object[] heartRateArray = heartRateData.entrySet().toArray();
+			Entry first, second = null;
+			counter = 0;
+			Double heartRateOne = 0.0;
+			Double heartRateTwo = 0.0;
+			Double steps = 0.0;
+			Double heartRateDiff = 0.0;
+			LinkedHashMap<Date, Integer> tempMap = new LinkedHashMap<>();
+			while (counter + 1 < heartRateArray.length) {
+				first = (Entry)heartRateArray[counter];
+				second = (Entry)heartRateArray[++counter];
+				heartRateOne = Double.parseDouble((((Integer)first.getValue()).toString()));
+				heartRateTwo = Double.parseDouble((((Integer)second.getValue()).toString()));
+				
+				System.out.println("first sec " + first.getKey() + " " + heartRateOne);
+				System.out.println("second sec" + second.getKey() + " " + heartRateTwo);
+				
+				seconds = 0;
+				calendar.setTime((Date) first.getKey());
+				while (calendar.getTime().before((Date) second.getKey())) {
+					calendar.add(Calendar.SECOND, 1);
 					seconds++;
 				}
-
-				speedArrayElement = (Element) (eElement
-						.getElementsByTagName("SpeedArray").item(0));
-
-				xmlData.put(xmlDateCalendar.getTime(), Double
-						.parseDouble((speedArrayElement.getElementsByTagName(
-								"decimal").item(0).getTextContent())));
-				xmlDateCalendar.add(Calendar.SECOND, 1);
-				seconds++;
-
-				xmlData.put(xmlDateCalendar.getTime(), Double
-						.parseDouble((speedArrayElement.getElementsByTagName(
-								"decimal").item(1).getTextContent())));
-				xmlDateCalendar.add(Calendar.SECOND, 1);
-				seconds++;
-
-				xmlData.put(xmlDateCalendar.getTime(), Double
-						.parseDouble((speedArrayElement.getElementsByTagName(
-								"decimal").item(2).getTextContent())));
-				xmlDateCalendar.add(Calendar.SECOND, 1);
-				seconds++;
-
-				xmlData.put(xmlDateCalendar.getTime(), Double
-						.parseDouble((speedArrayElement.getElementsByTagName(
-								"decimal").item(3).getTextContent())));
-				xmlDateCalendar.add(Calendar.SECOND, 1);
-				seconds++;
-
-				xmlData.put(xmlDateCalendar.getTime(), Double
-						.parseDouble((speedArrayElement.getElementsByTagName(
-								"decimal").item(4).getTextContent())));
-				xmlDateCalendar.add(Calendar.SECOND, 1);
-				seconds++;
-
-				counter++;
-			}
-
-			// tcx Stuff
-			File ftcxFile = new File(tcxFile);
-			dbFactory = DocumentBuilderFactory.newInstance();
-			dBuilder = dbFactory.newDocumentBuilder();
-			Document tcxDoc = dBuilder.parse(ftcxFile);
-
-			// Punkte speichern
-			tcxDoc.getDocumentElement().normalize();
-			nList = tcxDoc.getElementsByTagName("Trackpoint");
-			Date tcxDate = new Date();
-			counter = 0;
-			while (counter < nList.getLength()) {
-				nNode = nList.item(counter);
-				eElement = (Element) nNode;
-
-				tcxDate.setYear(Integer.parseInt(eElement
-						.getElementsByTagName("Time").item(0).getTextContent()
-						.substring(0, 4)));
-				tcxDate.setMonth(Integer.parseInt(eElement
-						.getElementsByTagName("Time").item(0).getTextContent()
-						.substring(5, 7)) - 1);
-				tcxDate.setDate(Integer.parseInt(eElement
-						.getElementsByTagName("Time").item(0).getTextContent()
-						.substring(8, 10)));
-				tcxDate.setHours(Integer.parseInt(eElement
-						.getElementsByTagName("Time").item(0).getTextContent()
-						.substring(11, 13)) + 2);
-				tcxDate.setMinutes(Integer.parseInt(eElement
-						.getElementsByTagName("Time").item(0).getTextContent()
-						.substring(14, 16)));
-				tcxDate.setSeconds(Integer.parseInt(eElement
-						.getElementsByTagName("Time").item(0).getTextContent()
-						.substring(17, 19)));
 				
-				System.out.println(tcxDate);
-
-				
-				for (Entry currentEntry : xmlData.entrySet()) {
-					if (((Date)currentEntry.getKey()).compareTo(tcxDate) == 1) {
-						eElement.getElementsByTagName("Speed").item(0)
-						.setTextContent(currentEntry.getValue().toString());
-						System.out.println("yes");
-						break;
+				heartRateDiff = 0.0;
+				steps = 0.0;
+				calendar.setTime((Date) first.getKey());
+				if (heartRateOne > heartRateTwo) {
+					heartRateDiff = heartRateOne - heartRateTwo;
+					steps = (Double) (heartRateDiff / seconds);
+					
+					while (calendar.getTime().before((Date) second.getKey())) {
+						System.out.println("save " + calendar.getTime() + " " + (Math.round(heartRateOne)));
+						tempMap.put(calendar.getTime(), (int) Math.round(heartRateOne));
+						heartRateOne -= steps;
+						calendar.add(Calendar.SECOND, 1);
+					}
+				} else {
+					heartRateDiff = heartRateTwo - heartRateOne;
+					steps = (Double) (heartRateDiff / seconds);
+					
+					while (calendar.getTime().before((Date) second.getKey())) {
+						System.out.println("save " + calendar.getTime() + " " + (Math.round(heartRateOne)));
+						tempMap.put(calendar.getTime(), (int) Math.round(heartRateOne));
+						heartRateOne += steps;
+						calendar.add(Calendar.SECOND, 1);
 					}
 				}
-				
-
-				counter++;
 			}
-
-			// write the content into xml file
-			TransformerFactory transformerFactory = TransformerFactory
-					.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource(tcxDoc);
-			StreamResult result = new StreamResult(new File(storeFile));
-			transformer.transform(source, result);
-
-			System.out.println("File saved!");
+			
+			heartRateData = tempMap;
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -200,8 +149,6 @@ public class Main {
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
-			e.printStackTrace();
-		} catch (TransformerException e) {
 			e.printStackTrace();
 		}
 	}
