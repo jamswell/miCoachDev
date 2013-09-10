@@ -1,19 +1,10 @@
 package miCoach;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
@@ -21,6 +12,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -33,19 +25,12 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class Main {
-	@SuppressWarnings({ "deprecation", "rawtypes" })
+	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/badminton/micoach.tcx";
-		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/badminton/converted.tcx";
-		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/badminton/garmin.tcx";
-
-		// String miCoachFile =
-		// "/home/gugugs/miCoachDev/git/miCoach/data/badminton/micoach.tcx";
-		// String storeFile =
-		// "/home/gugugs/miCoachDev/git/miCoach/data/badminton/converted.tcx";
-		// String garminFile =
-		// "/home/gugugs/miCoachDev/git/miCoach/data/badminton/garmin.tcx";
-
+		String miCoachFile = args[0];
+		String garminFile = args[1];
+		String storeFile = "converted.tcx";
+		
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 
 		try {
@@ -66,10 +51,11 @@ public class Main {
 			int counter = 0;
 			int year, month, day, hours, minutes, seconds, heartrate;
 			Calendar calendar = Calendar.getInstance();
+			Element currentElement = null;
+			String dateString = null;
 			while (counter < trackpointNodeList.getLength()) {
-				Element currentElement = (Element) trackpointNodeList
-						.item(counter);
-				String dateString = currentElement.getElementsByTagName("Time")
+				currentElement = (Element) trackpointNodeList.item(counter);
+				dateString = currentElement.getElementsByTagName("Time")
 						.item(0).getTextContent();
 				year = Integer.parseInt(dateString.substring(0, 4));
 				month = Integer.parseInt(dateString.substring(5, 7)) - 1;
@@ -99,48 +85,105 @@ public class Main {
 			Double heartRateDiff = 0.0;
 			LinkedHashMap<Date, Integer> tempMap = new LinkedHashMap<>();
 			while (counter + 1 < heartRateArray.length) {
-				first = (Entry)heartRateArray[counter];
-				second = (Entry)heartRateArray[++counter];
-				heartRateOne = Double.parseDouble((((Integer)first.getValue()).toString()));
-				heartRateTwo = Double.parseDouble((((Integer)second.getValue()).toString()));
-				
-				System.out.println("first sec " + first.getKey() + " " + heartRateOne);
-				System.out.println("second sec" + second.getKey() + " " + heartRateTwo);
-				
+				first = (Entry) heartRateArray[counter];
+				second = (Entry) heartRateArray[++counter];
+				heartRateOne = Double.parseDouble((((Integer) first.getValue())
+						.toString()));
+				heartRateTwo = Double
+						.parseDouble((((Integer) second.getValue()).toString()));
+
 				seconds = 0;
 				calendar.setTime((Date) first.getKey());
 				while (calendar.getTime().before((Date) second.getKey())) {
 					calendar.add(Calendar.SECOND, 1);
 					seconds++;
 				}
-				
+
 				heartRateDiff = 0.0;
 				steps = 0.0;
 				calendar.setTime((Date) first.getKey());
 				if (heartRateOne > heartRateTwo) {
 					heartRateDiff = heartRateOne - heartRateTwo;
 					steps = (Double) (heartRateDiff / seconds);
-					
+
 					while (calendar.getTime().before((Date) second.getKey())) {
-						System.out.println("save " + calendar.getTime() + " " + (Math.round(heartRateOne)));
-						tempMap.put(calendar.getTime(), (int) Math.round(heartRateOne));
+						tempMap.put(calendar.getTime(),
+								(int) Math.round(heartRateOne));
 						heartRateOne -= steps;
 						calendar.add(Calendar.SECOND, 1);
 					}
 				} else {
 					heartRateDiff = heartRateTwo - heartRateOne;
 					steps = (Double) (heartRateDiff / seconds);
-					
+
 					while (calendar.getTime().before((Date) second.getKey())) {
-						System.out.println("save " + calendar.getTime() + " " + (Math.round(heartRateOne)));
-						tempMap.put(calendar.getTime(), (int) Math.round(heartRateOne));
+						tempMap.put(calendar.getTime(),
+								(int) Math.round(heartRateOne));
 						heartRateOne += steps;
 						calendar.add(Calendar.SECOND, 1);
 					}
 				}
 			}
-			
 			heartRateData = tempMap;
+
+			// remove old track
+			Element track = (Element) garminDoc.getElementsByTagName("Track")
+					.item(0);
+			track.getParentNode().removeChild(track);
+			Element garminTrackElement = garminDoc.createElement("Track");
+			((Element) garminDoc.getElementsByTagName("Lap").item(0))
+					.appendChild(garminTrackElement);
+
+			// put trackpoints from miCoach to garmin
+			NodeList nList = miCoachDoc.getElementsByTagName("Trackpoint");
+			counter = 0;
+			Integer heartRateValue = 0;
+			Node importNode = null;
+			Integer maxDistance = null;
+			while (counter < nList.getLength()) {
+				currentElement = (Element) nList.item(counter);
+				dateString = currentElement.getElementsByTagName("Time")
+						.item(0).getTextContent();
+
+				year = Integer.parseInt(dateString.substring(0, 4));
+				month = Integer.parseInt(dateString.substring(5, 7)) - 1;
+				day = Integer.parseInt(dateString.substring(8, 10));
+				hours = Integer.parseInt(dateString.substring(11, 13));
+				minutes = Integer.parseInt(dateString.substring(14, 16));
+				seconds = Integer.parseInt(dateString.substring(17, 19));
+				calendar.set(year, month, day, hours, minutes, seconds);
+
+				heartRateValue = heartRateData.get(calendar.getTime());
+
+				if (heartRateValue != null) {
+					((Element) ((Element) currentElement.getElementsByTagName(
+							"HeartRateBpm").item(0)).getElementsByTagName(
+							"Value").item(0)).setTextContent(heartRateValue
+							.toString());
+
+					importNode = garminDoc
+							.importNode(nList.item(counter), true);
+					garminTrackElement.appendChild(importNode);
+					maxDistance = Integer.parseInt(((Element) currentElement
+							.getElementsByTagName("DistanceMeters").item(0))
+							.getTextContent());
+				}
+				counter++;
+			}
+
+			// set additional data to garminDoc
+			((Element) garminDoc.getElementsByTagName("DistanceMeters").item(0))
+					.setTextContent(maxDistance.toString());
+
+			// saving file
+			TransformerFactory transformerFactory = TransformerFactory
+					.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			DOMSource source = new DOMSource(garminDoc);
+			StreamResult result = new StreamResult(new File(storeFile));
+			transformer.transform(source, result);
+
+			System.out.println("File saved!");
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -149,6 +192,10 @@ public class Main {
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (TransformerConfigurationException e) {
+			e.printStackTrace();
+		} catch (TransformerException e) {
 			e.printStackTrace();
 		}
 	}
