@@ -30,11 +30,11 @@ public class Main {
 		// String miCoachFile = args[0];
 		// String garminFile = args[1];
 		// String storeFile = "converted.tcx";
-		
-		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash/micoach.tcx";
-		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash/garmin.tcx";
-		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash/converted.tcx";
-		
+
+		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
+		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
+		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
+
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
 
@@ -70,13 +70,16 @@ public class Main {
 				seconds = Integer.parseInt(dateString.substring(17, 19));
 				calendar.set(year, month, day, hours, minutes, seconds);
 
-				heartrate = Integer
-						.parseInt(((Element) currentElement
-								.getElementsByTagName("HeartRateBpm").item(0))
-								.getElementsByTagName("Value").item(0)
-								.getTextContent());
+				if (((Element) currentElement.getElementsByTagName(
+						"HeartRateBpm").item(0)) != null) {
+					heartrate = Integer.parseInt(((Element) currentElement
+							.getElementsByTagName("HeartRateBpm").item(0))
+							.getElementsByTagName("Value").item(0)
+							.getTextContent());
 
-				heartRateData.put(calendar.getTime(), heartrate);
+					heartRateData.put(calendar.getTime(), heartrate);
+				}
+
 				counter++;
 			}
 
@@ -131,7 +134,7 @@ public class Main {
 			}
 			heartRateData = tempMap;
 
-			// remove old track
+			// remove old tracks and get laps
 			NodeList nList = garminDoc.getElementsByTagName("Lap");
 			Element garminTrackElement = null;
 			for (int i = 0; i < nList.getLength(); i++) {
@@ -141,26 +144,34 @@ public class Main {
 				year = Integer.parseInt(dateString.substring(0, 4));
 				month = Integer.parseInt(dateString.substring(5, 7)) - 1;
 				day = Integer.parseInt(dateString.substring(8, 10));
-				hours = Integer.parseInt(dateString.substring(11, 13));
+				hours = Integer.parseInt(dateString.substring(11, 13)) + 2;
 				minutes = Integer.parseInt(dateString.substring(14, 16));
 				seconds = Integer.parseInt(dateString.substring(17, 19));
 				calendar.set(year, month, day, hours, minutes, seconds);
-				
-				currentElement.removeChild(currentElement.getElementsByTagName("Track").item(0));
+
+				currentElement.removeChild(currentElement.getElementsByTagName(
+						"Track").item(0));
 				garminTrackElement = garminDoc.createElement("Track");
 				currentElement.appendChild(garminTrackElement);
 				lapData.put(calendar.getTime(), garminTrackElement);
 			}
+			int lapLength = nList.getLength();
 
 			// put trackpoints from miCoach to garmin
 			nList = miCoachDoc.getElementsByTagName("Trackpoint");
 			counter = 0;
 			Integer heartRateValue = 0;
 			Node importNode = null;
-			Integer maxDistance = null;
+			Integer lastMaxDistance = 0;
+			Integer maxDistance = 0;
 			int lapCounter = 0;
-			Element currentLap = (Element) ((Entry)lapData.entrySet().toArray()[lapCounter]).getValue();
-			Date currentLapDate = (Date) ((Entry)lapData.entrySet().toArray()[lapCounter++]).getKey();
+			Date nextLapDate = null;
+			Element currentLap = (Element) ((Entry) lapData.entrySet()
+					.toArray()[lapCounter]).getValue();
+			if (lapLength > 1) {
+				nextLapDate = (Date) ((Entry) lapData.entrySet().toArray()[lapCounter + 1])
+						.getKey();
+			}
 			while (counter < nList.getLength()) {
 				currentElement = (Element) nList.item(counter);
 				dateString = currentElement.getElementsByTagName("Time")
@@ -176,6 +187,25 @@ public class Main {
 
 				heartRateValue = heartRateData.get(calendar.getTime());
 
+				// lap zeigen aendern
+				if (nextLapDate != null
+						&& calendar.getTime().after(nextLapDate)) {
+					(((Element) currentLap.getParentNode())
+							.getElementsByTagName("DistanceMeters").item(0))
+							.setTextContent((new Integer(maxDistance
+									- lastMaxDistance)).toString());
+					lastMaxDistance = maxDistance;
+					lapCounter++;
+					currentLap = (Element) ((Entry) lapData.entrySet()
+							.toArray()[lapCounter]).getValue();
+					if (lapCounter == lapLength - 1) {
+						nextLapDate = null;
+					} else {
+						nextLapDate = (Date) ((Entry) lapData.entrySet()
+								.toArray()[lapCounter + 1]).getKey();
+					}
+				}
+
 				if (heartRateValue != null) {
 					((Element) ((Element) currentElement.getElementsByTagName(
 							"HeartRateBpm").item(0)).getElementsByTagName(
@@ -185,22 +215,19 @@ public class Main {
 					importNode = garminDoc
 							.importNode(nList.item(counter), true);
 					currentLap.appendChild(importNode);
-					
-					
-					//TODO: Hier weiter machen: after current muss auf naechste lap zeigen...
-					System.out.println(calendar.getTime());
-					if (calendar.getTime().after(currentLapDate)) {
-						currentLap = (Element) ((Entry)lapData.entrySet().toArray()[lapCounter]).getValue();
-						currentLapDate = (Date) ((Entry)lapData.entrySet().toArray()[lapCounter++]).getKey();
-						System.out.println("yes");
-					}
+
+					maxDistance = Integer.parseInt(((Element) currentElement
+							.getElementsByTagName("DistanceMeters").item(0))
+							.getTextContent());
+
 				}
 				counter++;
 			}
 
-			// set additional data to garminDoc
-			((Element) garminDoc.getElementsByTagName("DistanceMeters").item(0))
-					.setTextContent(maxDistance.toString());
+			(((Element) currentLap.getParentNode())
+					.getElementsByTagName("DistanceMeters").item(0))
+					.setTextContent((new Integer(maxDistance - lastMaxDistance))
+							.toString());
 
 			// saving file
 			TransformerFactory transformerFactory = TransformerFactory
