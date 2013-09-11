@@ -27,11 +27,16 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		String miCoachFile = args[0];
-		String garminFile = args[1];
-		String storeFile = "converted.tcx";
+		// String miCoachFile = args[0];
+		// String garminFile = args[1];
+		// String storeFile = "converted.tcx";
+		
+		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash/micoach.tcx";
+		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash/garmin.tcx";
+		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash/converted.tcx";
 		
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
+		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
 
 		try {
 			// make builders
@@ -127,19 +132,35 @@ public class Main {
 			heartRateData = tempMap;
 
 			// remove old track
-			Element track = (Element) garminDoc.getElementsByTagName("Track")
-					.item(0);
-			track.getParentNode().removeChild(track);
-			Element garminTrackElement = garminDoc.createElement("Track");
-			((Element) garminDoc.getElementsByTagName("Lap").item(0))
-					.appendChild(garminTrackElement);
+			NodeList nList = garminDoc.getElementsByTagName("Lap");
+			Element garminTrackElement = null;
+			for (int i = 0; i < nList.getLength(); i++) {
+				currentElement = (Element) nList.item(i);
+				dateString = currentElement.getAttribute("StartTime");
+
+				year = Integer.parseInt(dateString.substring(0, 4));
+				month = Integer.parseInt(dateString.substring(5, 7)) - 1;
+				day = Integer.parseInt(dateString.substring(8, 10));
+				hours = Integer.parseInt(dateString.substring(11, 13));
+				minutes = Integer.parseInt(dateString.substring(14, 16));
+				seconds = Integer.parseInt(dateString.substring(17, 19));
+				calendar.set(year, month, day, hours, minutes, seconds);
+				
+				currentElement.removeChild(currentElement.getElementsByTagName("Track").item(0));
+				garminTrackElement = garminDoc.createElement("Track");
+				currentElement.appendChild(garminTrackElement);
+				lapData.put(calendar.getTime(), garminTrackElement);
+			}
 
 			// put trackpoints from miCoach to garmin
-			NodeList nList = miCoachDoc.getElementsByTagName("Trackpoint");
+			nList = miCoachDoc.getElementsByTagName("Trackpoint");
 			counter = 0;
 			Integer heartRateValue = 0;
 			Node importNode = null;
 			Integer maxDistance = null;
+			int lapCounter = 0;
+			Element currentLap = (Element) ((Entry)lapData.entrySet().toArray()[lapCounter]).getValue();
+			Date currentLapDate = (Date) ((Entry)lapData.entrySet().toArray()[lapCounter++]).getKey();
 			while (counter < nList.getLength()) {
 				currentElement = (Element) nList.item(counter);
 				dateString = currentElement.getElementsByTagName("Time")
@@ -163,10 +184,16 @@ public class Main {
 
 					importNode = garminDoc
 							.importNode(nList.item(counter), true);
-					garminTrackElement.appendChild(importNode);
-					maxDistance = Integer.parseInt(((Element) currentElement
-							.getElementsByTagName("DistanceMeters").item(0))
-							.getTextContent());
+					currentLap.appendChild(importNode);
+					
+					
+					//TODO: Hier weiter machen: after current muss auf naechste lap zeigen...
+					System.out.println(calendar.getTime());
+					if (calendar.getTime().after(currentLapDate)) {
+						currentLap = (Element) ((Entry)lapData.entrySet().toArray()[lapCounter]).getValue();
+						currentLapDate = (Date) ((Entry)lapData.entrySet().toArray()[lapCounter++]).getKey();
+						System.out.println("yes");
+					}
 				}
 				counter++;
 			}
