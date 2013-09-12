@@ -3,6 +3,8 @@ package miCoach;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -11,6 +13,7 @@ import java.util.Map.Entry;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -172,6 +175,7 @@ public class Main {
 				nextLapDate = (Date) ((Entry) lapData.entrySet().toArray()[lapCounter + 1])
 						.getKey();
 			}
+			Date tempDate = null;
 			while (counter < nList.getLength()) {
 				currentElement = (Element) nList.item(counter);
 				dateString = currentElement.getElementsByTagName("Time")
@@ -206,22 +210,84 @@ public class Main {
 					}
 				}
 
+				// herzdaten setzen
 				if (heartRateValue != null) {
-					((Element) ((Element) currentElement.getElementsByTagName(
-							"HeartRateBpm").item(0)).getElementsByTagName(
-							"Value").item(0)).setTextContent(heartRateValue
-							.toString());
 
-					importNode = garminDoc
-							.importNode(nList.item(counter), true);
-					currentLap.appendChild(importNode);
+					tempDate = ((Date) ((Entry) heartRateData.entrySet()
+							.toArray()[0]).getKey());
 
-					maxDistance = Integer.parseInt(((Element) currentElement
-							.getElementsByTagName("DistanceMeters").item(0))
-							.getTextContent());
+					System.out.println(tempDate);
+					System.out.println(calendar.getTime());
 
+					// trackpoint von garmin uebernehmen
+					if (tempDate.before(calendar.getTime())) {
+						// add data
+						Element newTrackpoint = garminDoc
+								.createElement("Trackpoint");
+
+						// 2013-09-11T18:01:39
+						DateFormat dateFormater = new SimpleDateFormat(
+								"YYYY-MM-dd'T'HH:mm:ss");
+						Element newTime = garminDoc.createElement("Time");
+						newTime.setTextContent(dateFormater.format(tempDate));
+						newTrackpoint.appendChild(newTime);
+
+						Element newDistanceMeters = garminDoc
+								.createElement("DistanceMeters");
+						newDistanceMeters.setTextContent("0.0");
+						newTrackpoint.appendChild(newDistanceMeters);
+
+						Element newHeartRateBpm = garminDoc
+								.createElement("HeartRateBpm");
+						Element newHeartRateValue = garminDoc
+								.createElement("Value");
+						newHeartRateValue.setTextContent(heartRateData.get(
+								tempDate).toString());
+						newHeartRateBpm.setAttribute("xsi:type",
+								"HeartRateInBeatsPerMinute_t");
+						newHeartRateBpm.appendChild(newHeartRateValue);
+						newTrackpoint.appendChild(newHeartRateBpm);
+
+						Element newExtensions = garminDoc
+								.createElement("Extensions");
+						Element newTpx = garminDoc.createElement("TPX");
+						Element newSpeed = garminDoc.createElement("Speed");
+						newTpx.setAttribute("xmlns",
+								"http://www.garmin.com/xmlschemas/ActivityExtension/v2");
+						newTpx.setAttribute("CadenceSensor", "Footpod");
+						newSpeed.setTextContent("0.0");
+						newExtensions.appendChild(newTpx);
+						newTpx.appendChild(newSpeed);
+						newTrackpoint.appendChild(newExtensions);
+
+						currentLap.appendChild(newTrackpoint);
+
+						heartRateData.remove(tempDate);
+
+					} else {
+
+						((Element) ((Element) currentElement
+								.getElementsByTagName("HeartRateBpm").item(0))
+								.getElementsByTagName("Value").item(0))
+								.setTextContent(heartRateValue.toString());
+
+						importNode = garminDoc.importNode(nList.item(counter),
+								true);
+						currentLap.appendChild(importNode);
+
+						maxDistance = Integer
+								.parseInt(((Element) currentElement
+										.getElementsByTagName("DistanceMeters")
+										.item(0)).getTextContent());
+
+						heartRateData.remove(calendar.getTime());
+
+						counter++;
+
+					}
+				} else {
+					counter++;
 				}
-				counter++;
 			}
 
 			(((Element) currentLap.getParentNode())
@@ -230,9 +296,11 @@ public class Main {
 							.toString());
 
 			// saving file
+			garminDoc.normalizeDocument();
 			TransformerFactory transformerFactory = TransformerFactory
 					.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 			DOMSource source = new DOMSource(garminDoc);
 			StreamResult result = new StreamResult(new File(storeFile));
 			transformer.transform(source, result);
