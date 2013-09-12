@@ -30,16 +30,13 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		String miCoachFile = args[0];
-		String garminFile = args[1];
-		String storeFile = "converted.tcx";
+		// String miCoachFile = args[0];
+		// String garminFile = args[1];
+		// String storeFile = "converted.tcx";
 
-		// String miCoachFile =
-		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
-		// String garminFile =
-		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
-		// String storeFile =
-		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
+		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
+		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
+		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
 
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
@@ -172,6 +169,8 @@ public class Main {
 			Integer maxDistance = 0;
 			int lapCounter = 0;
 			Date nextLapDate = null;
+			Integer maxSpeed = 0;
+			Integer currentSpeed = null;
 			Element currentLap = (Element) ((Entry) lapData.entrySet()
 					.toArray()[lapCounter]).getValue();
 			if (lapLength > 1) {
@@ -194,6 +193,14 @@ public class Main {
 
 				heartRateValue = heartRateData.get(calendar.getTime());
 
+				currentSpeed = Integer.parseInt(((Element) currentElement
+						.getElementsByTagName("RunCadence").item(0))
+						.getTextContent());
+
+				if (currentSpeed > maxSpeed) {
+					maxSpeed = currentSpeed;
+				}
+
 				// lap zeigen aendern
 				if (nextLapDate != null
 						&& calendar.getTime().after(nextLapDate)) {
@@ -201,6 +208,11 @@ public class Main {
 							.getElementsByTagName("DistanceMeters").item(0))
 							.setTextContent((new Integer(maxDistance
 									- lastMaxDistance)).toString());
+					(((Element) currentLap.getParentNode())
+							.getElementsByTagName("MaximumSpeed").item(0))
+							.setTextContent(maxSpeed.toString());
+
+					maxSpeed = 0;
 					lastMaxDistance = maxDistance;
 					lapCounter++;
 					currentLap = (Element) ((Entry) lapData.entrySet()
@@ -219,11 +231,9 @@ public class Main {
 					tempDate = ((Date) ((Entry) heartRateData.entrySet()
 							.toArray()[0]).getKey());
 
-					System.out.println(tempDate);
-					System.out.println(calendar.getTime());
-
 					// trackpoint von garmin uebernehmen
 					if (tempDate.before(calendar.getTime())) {
+						System.out.println(tempDate);
 						// add data
 						Element newTrackpoint = garminDoc
 								.createElement("Trackpoint");
@@ -251,12 +261,51 @@ public class Main {
 						newHeartRateBpm.appendChild(newHeartRateValue);
 						newTrackpoint.appendChild(newHeartRateBpm);
 
+						Element newExtensions = garminDoc
+								.createElement("Extensions");
+						Element newFatCalories = garminDoc
+								.createElement("FatCalories");
+						Element newValue = garminDoc.createElement("Value");
+						Element newActivityTrackpointExtension = garminDoc
+								.createElement("ActivityTrackpointExtension");
+						Element newRunCadence = garminDoc
+								.createElement("RunCadence");
+						newFatCalories
+								.setAttribute("xmlns",
+										"http://www.garmin.com/xmlschemas/FatCalories/v1");
+						newActivityTrackpointExtension
+								.setAttribute("xmlns",
+										"http://www.garmin.com/xmlschemas/ActivityExtension/v1");
+						newActivityTrackpointExtension.setAttribute(
+								"SourceSensor", "Footpod");
+						newValue.setTextContent("0");
+						newRunCadence.setTextContent("0");
+						newFatCalories.appendChild(newValue);
+						newActivityTrackpointExtension
+								.appendChild(newRunCadence);
+						newExtensions.appendChild(newFatCalories);
+						newExtensions
+								.appendChild(newActivityTrackpointExtension);
+						newTrackpoint.appendChild(newExtensions);
+
+						Element newPosition = garminDoc
+								.createElement("Position");
+						Element newLatitudeDegrees = garminDoc
+								.createElement("LatitudeDegrees");
+						Element newLongitudeDegrees = garminDoc
+								.createElement("LongitudeDegrees");
+						newLatitudeDegrees.setTextContent("0.0");
+						newLongitudeDegrees.setTextContent("0.0");
+						newPosition.appendChild(newLatitudeDegrees);
+						newPosition.appendChild(newLongitudeDegrees);
+						newTrackpoint.appendChild(newPosition);
+
 						currentLap.appendChild(newTrackpoint);
 
 						heartRateData.remove(tempDate);
 
 					} else {
-
+						System.out.println(calendar.getTime());
 						((Element) ((Element) currentElement
 								.getElementsByTagName("HeartRateBpm").item(0))
 								.getElementsByTagName("Value").item(0))
