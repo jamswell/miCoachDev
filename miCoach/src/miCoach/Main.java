@@ -27,13 +27,16 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		// String miCoachFile = args[0];
-		// String garminFile = args[1];
-		// String storeFile = "converted.tcx";
+		String miCoachFile = args[0];
+		String garminFile = args[1];
+		String storeFile = "converted.tcx";
 
-		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
-		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
-		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
+		// String miCoachFile =
+		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
+		// String garminFile =
+		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
+		// String storeFile =
+		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
 
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
