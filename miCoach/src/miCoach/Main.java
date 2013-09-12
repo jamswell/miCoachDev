@@ -244,11 +244,11 @@ public class Main {
 						newTime.setTextContent(dateFormater.format(tempDate));
 						newTrackpoint.appendChild(newTime);
 
-						Element newDistanceMeters = garminDoc
-								.createElement("DistanceMeters");
-						newDistanceMeters
-								.setTextContent(maxDistance.toString());
-						newTrackpoint.appendChild(newDistanceMeters);
+						// Element newDistanceMeters = garminDoc
+						// .createElement("DistanceMeters");
+						// newDistanceMeters
+						// .setTextContent(maxDistance.toString());
+						// newTrackpoint.appendChild(newDistanceMeters);
 
 						Element newHeartRateBpm = garminDoc
 								.createElement("HeartRateBpm");
@@ -261,44 +261,44 @@ public class Main {
 						newHeartRateBpm.appendChild(newHeartRateValue);
 						newTrackpoint.appendChild(newHeartRateBpm);
 
-						Element newExtensions = garminDoc
-								.createElement("Extensions");
-						Element newFatCalories = garminDoc
-								.createElement("FatCalories");
-						Element newValue = garminDoc.createElement("Value");
-						Element newActivityTrackpointExtension = garminDoc
-								.createElement("ActivityTrackpointExtension");
-						Element newRunCadence = garminDoc
-								.createElement("RunCadence");
-						newFatCalories
-								.setAttribute("xmlns",
-										"http://www.garmin.com/xmlschemas/FatCalories/v1");
-						newActivityTrackpointExtension
-								.setAttribute("xmlns",
-										"http://www.garmin.com/xmlschemas/ActivityExtension/v1");
-						newActivityTrackpointExtension.setAttribute(
-								"SourceSensor", "Footpod");
-						newValue.setTextContent("0");
-						newRunCadence.setTextContent("0");
-						newFatCalories.appendChild(newValue);
-						newActivityTrackpointExtension
-								.appendChild(newRunCadence);
-						newExtensions.appendChild(newFatCalories);
-						newExtensions
-								.appendChild(newActivityTrackpointExtension);
-						newTrackpoint.appendChild(newExtensions);
+						// Element newExtensions = garminDoc
+						// .createElement("Extensions");
+						// Element newFatCalories = garminDoc
+						// .createElement("FatCalories");
+						// Element newValue = garminDoc.createElement("Value");
+						// Element newActivityTrackpointExtension = garminDoc
+						// .createElement("ActivityTrackpointExtension");
+						// Element newRunCadence = garminDoc
+						// .createElement("RunCadence");
+						// newFatCalories
+						// .setAttribute("xmlns",
+						// "http://www.garmin.com/xmlschemas/FatCalories/v1");
+						// newActivityTrackpointExtension
+						// .setAttribute("xmlns",
+						// "http://www.garmin.com/xmlschemas/ActivityExtension/v1");
+						// newActivityTrackpointExtension.setAttribute(
+						// "SourceSensor", "Footpod");
+						// newValue.setTextContent("0");
+						// newRunCadence.setTextContent("0");
+						// newFatCalories.appendChild(newValue);
+						// newActivityTrackpointExtension
+						// .appendChild(newRunCadence);
+						// newExtensions.appendChild(newFatCalories);
+						// newExtensions
+						// .appendChild(newActivityTrackpointExtension);
+						// newTrackpoint.appendChild(newExtensions);
 
-						Element newPosition = garminDoc
-								.createElement("Position");
-						Element newLatitudeDegrees = garminDoc
-								.createElement("LatitudeDegrees");
-						Element newLongitudeDegrees = garminDoc
-								.createElement("LongitudeDegrees");
-						newLatitudeDegrees.setTextContent("0.0");
-						newLongitudeDegrees.setTextContent("0.0");
-						newPosition.appendChild(newLatitudeDegrees);
-						newPosition.appendChild(newLongitudeDegrees);
-						newTrackpoint.appendChild(newPosition);
+						// Element newPosition = garminDoc
+						// .createElement("Position");
+						// Element newLatitudeDegrees = garminDoc
+						// .createElement("LatitudeDegrees");
+						// Element newLongitudeDegrees = garminDoc
+						// .createElement("LongitudeDegrees");
+						// newLatitudeDegrees.setTextContent("0.0");
+						// newLongitudeDegrees.setTextContent("0.0");
+						// newPosition.appendChild(newLatitudeDegrees);
+						// newPosition.appendChild(newLongitudeDegrees);
+						// newTrackpoint.appendChild(newPosition);
 
 						currentLap.appendChild(newTrackpoint);
 
