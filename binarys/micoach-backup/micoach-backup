@@ -1,0 +1,268 @@
+#!/usr/bin/env python
+
+import logging
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
+
+import os, sys
+try:
+    from PySide import QtCore, QtGui, QtUiTools
+except ImportError:
+    print "Could not load PySide (Qt) librairies, exiting."
+    sys.exit(1)
+
+try:
+    from configobj import ConfigObj
+except ImportError:
+    print "Could not load ConfigObj, exiting."
+    sys.exit(1)
+
+from gui.mainwindow import Ui_MainWindow
+from gui.choicetable import ChoiceTable
+from libmicoach.user import miCoachUser
+from libmicoach.errors import *
+
+from config import config, ConfigUI
+from storage import Storage
+from user import AsioUser
+
+
+class MainWindow(QtGui.QMainWindow):
+    ConnectView, ChooseView, DownloadView = range(3)
+    ProgressBarDownloadRatio = 70
+    ProgressBarSaveRatio = 100 - ProgressBarDownloadRatio
+    
+    def __init__(self, *args):
+        QtGui.QMainWindow.__init__(self)
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        
+        self.table = ChoiceTable(self.ui.choosePage)
+        self.ui.chooseVLayout.addWidget(self.table)
+        self.ui.loadingMovie = QtGui.QMovie(":/images/loading.apng")
+        self.ui.loadingIcon.setMovie(self.ui.loadingMovie)
+        self.ui.chooseInstructionsIcon.setMovie(self.ui.loadingMovie)
+        self.ui.loadingMovie.start()
+        
+        # connections
+        self.ui.configButton.clicked.connect(self.showConfig)
+        self.ui.nextButton.clicked.connect(self.processAndGoNext)
+        self.ui.previousButton.clicked.connect(self.abortAndGoPrevious)
+        
+        self.user = AsioUser(self)
+        self.user.loginFinished.connect(self.loginFinished)
+        self.user.getLogFinished.connect(self.getLogFinished)
+        self.user.downloadFileFinished.connect(self.downloadFileFinished)
+        self.user.downloadAllFinished.connect(self.downloadAllFinished)
+        
+        self.storage = None
+        
+        self.toBeDownloaded = []
+        self.alreadyDownloaded = []
+        
+        self.updateInterface(self.ConnectView)
+        if config['user'].as_bool('auto_connect'):
+            self.processAndGoNext()
+    
+    def loginFinished(self, success):
+        if success:
+            self.user.doGetLog()
+            self.goNext()
+        else:
+            QtGui.QMessageBox.critical(self, "miCoach backup", "Login failed")
+            self.updateInterface(self.ConnectView)
+    
+    def getLogFinished(self, success):
+        if success:
+            self.storage = Storage(self.user.screenName)
+            self.updateInterface(self.ChooseView)
+        else:
+            QtGui.QMessageBox.critical(self, "miCoach backup", "Could not retrieve workout list")
+
+    def downloadFileFinished(self, id):
+        self.alreadyDownloaded.append(id)
+        log.info("Already downloaded: %s" % str(self.alreadyDownloaded))
+        
+        self.updateInterface(self.currentView)
+    
+    def downloadAllFinished(self, workouts):
+        if self.user.workouts:
+            log.info("All workouts downloaded (%d)" % len(self.user.workouts))
+
+            self.ui.progressLabel.setText("All files downloaded, saving")
+            
+            i = 0
+            for w in self.user.workouts:
+                i += 1
+                self.storage.addWorkout(w)
+
+                # counting from download achieved (e.g. 70%)
+                self.ui.progressBar.setValue(self.ProgressBarDownloadRatio + self.ProgressBarSaveRatio*(i/len(self.user.workouts)))
+
+            log.info("All workouts written")
+            self.ui.progressLabel.setText("All files saved")
+            
+
+    
+    def processAndGoNext(self):
+        # ConnectView
+        if self.currentView == self.ConnectView:
+            email  = self.ui.emailLine.text()
+            passwd = self.ui.passwordLine.text()
+            if not email or not passwd:
+                QtGui.QMessageBox.critical(self, "miCoach backup", "Email and/or password missing")
+                return
+        
+            # update configuration file
+            if self.ui.connectBox.isChecked():
+                config['user']['email'], config['user']['password'] = email, passwd
+            else:
+                config['user']['email'], config['user']['password'] = "", ""
+
+            config['user']['auto_connect'] = self.ui.connectBox.isChecked()
+            config.write()
+            
+            
+            #launch login
+            self.user.doLogin(email, passwd)
+
+            self.ui.loadingIcon.setVisible(True)
+            self.ui.loadingLabel.setVisible(True)
+
+        # ChooseView
+        elif self.currentView == self.ChooseView:
+            self.toBeDownloaded = self.table.getCheckedId()
+            self.alreadyDownloaded = []
+            
+            if not len(self.toBeDownloaded):
+                QtGui.QMessageBox.critical(self, "miCoach backup", "No workout selected")
+            else:
+                self.user.doDownload(self.toBeDownloaded)
+                self.goNext()
+
+        # DownloadView
+        elif self.currentView == self.DownloadView:
+            log.info("Bye")
+            # exiting
+            if self.user.isRunning():
+                self.user.terminate()
+            QtCore.QCoreApplication.instance().quit()
+        
+    def abortAndGoPrevious(self):
+        if self.user.isRunning():
+            self.user.terminate()
+        
+        # ConnectView
+        if self.currentView == self.ConnectView:
+            self.user.logout()
+        
+        # ChooseView
+        elif self.currentView == self.ChooseView:
+            self.user.workoutList = None
+            
+        # DownloadView
+        elif self.currentView == self.DownloadView:
+            pass
+        
+        self.goPrevious()
+    
+    def goNext(self):
+        self.updateInterface(self.currentView+1)
+        
+    def goPrevious(self):
+        self.updateInterface(self.currentView-1)
+    
+    def cancel(self):
+        log.info("Abort and exit")
+        # exiting
+        if self.user.isRunning():
+            self.user.terminate()
+        QtCore.QCoreApplication.instance().quit()
+        
+    def centerInterface(self):
+        geo = self.frameGeometry()
+        center = QtGui.QDesktopWidget().availableGeometry().center()
+        geo.moveCenter(center)
+        self.move(geo.topLeft())
+        
+    def updateInterface(self, view):
+        if not view in (self.ConnectView, self.ChooseView, self.DownloadView):
+            return
+        
+        self.currentView = view
+        self.ui.viewPages.setCurrentIndex(self.currentView)
+        
+        self.ui.loadingIcon.setVisible(False)
+        self.ui.loadingLabel.setVisible(False)
+        
+        # ConnectView
+        if self.currentView == self.ConnectView:
+            # populate
+            try:
+                self.ui.emailLine.setText(config['user']['email'])
+                self.ui.passwordLine.setText(config['user']['password'])
+                self.ui.connectBox.setChecked(config['user'].as_bool('auto_connect'))
+            except:
+                pass
+            
+            # buttons
+            self.ui.cancelButton.setVisible(False)
+            self.ui.previousButton.setVisible(False)
+            self.ui.emailLine.setFocus()
+            
+            self.ui.nextButton.setText("Next")
+            self.resize(480, 205)
+            self.centerInterface()
+        
+        # ChooseView
+        elif self.currentView == self.ChooseView:
+            # buttons
+            self.ui.cancelButton.setVisible(True)
+            self.ui.previousButton.setVisible(True)
+            self.ui.nextButton.setText("Next")
+
+            if self.user.workoutList is None:
+                self.ui.chooseInstructionsIcon.setShown(True)
+                self.ui.chooseInstructionsLabel.setText("Loading list of workouts")
+            else:
+                existing = self.storage.compareWorkoutList(self.user.workoutList)
+                
+                self.ui.chooseInstructionsIcon.setShown(False)
+                self.ui.chooseInstructionsLabel.setText("Found %d workouts (%d new)" % (len(self.user.workoutList), len(existing)))
+                self.resize(1000, 450)
+                self.centerInterface()
+                
+                for workout in self.user.workoutList:
+                    self.table.addLine(workout, workout['id'] in existing)
+                
+        # DownloadView
+        elif self.currentView == self.DownloadView:
+            # buttons
+            self.ui.cancelButton.setVisible(True)
+            self.ui.previousButton.setVisible(True)
+            self.ui.nextButton.setText("Finish")
+            
+            # progress
+            self.ui.progressBar.setValue(self.ProgressBarDownloadRatio*len(self.alreadyDownloaded)/len(self.toBeDownloaded))
+            if len(self.alreadyDownloaded) < len(self.toBeDownloaded):
+                self.ui.progressLabel.setText("Downloading file %d of %d" % (len(self.alreadyDownloaded)+1, len(self.toBeDownloaded)))
+            else:
+                self.ui.progressLabel.setText("All files downloaded, saving")
+            
+            self.resize(480, 205)
+            self.centerInterface()
+
+    def showConfig(self):
+        conf = ConfigUI(config)
+        conf.exec_()
+
+if __name__ == '__main__':
+    app = QtGui.QApplication(sys.argv)
+    app.connect(app, QtCore.SIGNAL("lastWindowClosed()"),
+                app, QtCore.SLOT("quit()"))
+    
+    win  = MainWindow()
+    win.show()
+
+    sys.exit(app.exec_())
+
