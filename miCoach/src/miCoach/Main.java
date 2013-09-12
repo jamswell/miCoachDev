@@ -30,13 +30,16 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		// String miCoachFile = args[0];
-		// String garminFile = args[1];
-		// String storeFile = "converted.tcx";
+		String miCoachFile = args[0];
+		String garminFile = args[1];
+		String storeFile = "converted.tcx";
 
-		String miCoachFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
-		String garminFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
-		String storeFile = "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
+		// String miCoachFile =
+		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
+		// String garminFile =
+		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
+		// String storeFile =
+		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
 
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
@@ -225,7 +228,6 @@ public class Main {
 						Element newTrackpoint = garminDoc
 								.createElement("Trackpoint");
 
-						// 2013-09-11T18:01:39
 						DateFormat dateFormater = new SimpleDateFormat(
 								"YYYY-MM-dd'T'HH:mm:ss");
 						Element newTime = garminDoc.createElement("Time");
@@ -234,7 +236,8 @@ public class Main {
 
 						Element newDistanceMeters = garminDoc
 								.createElement("DistanceMeters");
-						newDistanceMeters.setTextContent("0.0");
+						newDistanceMeters
+								.setTextContent(maxDistance.toString());
 						newTrackpoint.appendChild(newDistanceMeters);
 
 						Element newHeartRateBpm = garminDoc
@@ -247,18 +250,6 @@ public class Main {
 								"HeartRateInBeatsPerMinute_t");
 						newHeartRateBpm.appendChild(newHeartRateValue);
 						newTrackpoint.appendChild(newHeartRateBpm);
-
-						Element newExtensions = garminDoc
-								.createElement("Extensions");
-						Element newTpx = garminDoc.createElement("TPX");
-						Element newSpeed = garminDoc.createElement("Speed");
-						newTpx.setAttribute("xmlns",
-								"http://www.garmin.com/xmlschemas/ActivityExtension/v2");
-						newTpx.setAttribute("CadenceSensor", "Footpod");
-						newSpeed.setTextContent("0.0");
-						newExtensions.appendChild(newTpx);
-						newTpx.appendChild(newSpeed);
-						newTrackpoint.appendChild(newExtensions);
 
 						currentLap.appendChild(newTrackpoint);
 
