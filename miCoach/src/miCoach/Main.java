@@ -30,7 +30,7 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		if (args[0] == null || args[1] == null) {
+		if (args.length < 2) {
 			System.out
 					.println("Bitte zuerst miCoach File dann garminFile angeben");
 			System.exit(0);
@@ -337,7 +337,7 @@ public class Main {
 							newTrackpoint.appendChild(newPosition);
 
 							currentLap.appendChild(newTrackpoint);
-							// System.out.println(tempDate);
+							System.out.println(tempDate);
 						}
 
 						heartRateData.remove(tempDate);
@@ -351,7 +351,7 @@ public class Main {
 						importNode = garminDoc.importNode(nList.item(counter),
 								true);
 						currentLap.appendChild(importNode);
-						// System.out.println(calendar.getTime());
+						System.out.println(calendar.getTime());
 
 						maxDistance = Integer
 								.parseInt(((Element) currentElement
