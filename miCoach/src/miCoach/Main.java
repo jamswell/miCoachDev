@@ -30,9 +30,14 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
-		// String miCoachFile = args[0];
-		// String garminFile = args[1];
-		// String storeFile = "converted.tcx";
+		if (args[0] == null || args[1] == null) {
+			System.out
+					.println("Bitte zuerst miCoach File dann garminFile angeben");
+			System.exit(0);
+		}
+		String miCoachFile = args[0];
+		String garminFile = args[1];
+		String storeFile = "converted.tcx";
 
 		// String miCoachFile =
 		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/micoach.tcx";
@@ -41,9 +46,12 @@ public class Main {
 		// String storeFile =
 		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
 
-		String miCoachFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash2/micoach.tcx";
-		String garminFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash2/garmin.tcx";
-		String storeFile = "/home/gugugs/miCoachDev/git/miCoach/data/squash2/converted.tcx";
+		// String miCoachFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/micoach.tcx";
+		// String garminFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/garmin.tcx";
+		// String storeFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/converted.tcx";
 
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
@@ -185,7 +193,9 @@ public class Main {
 						.getKey();
 			}
 			Date tempDate = null;
+			Double totalTimeSeconds = 0.0;
 			Element elementBefore = (Element) nList.item(0);
+			Double avgSpeed = 0.0;
 			while (counter < nList.getLength()) {
 				currentElement = (Element) nList.item(counter);
 				dateString = currentElement.getElementsByTagName("Time")
@@ -216,9 +226,19 @@ public class Main {
 							.getElementsByTagName("DistanceMeters").item(0))
 							.setTextContent((new Integer(maxDistance
 									- lastMaxDistance)).toString());
+
 					(((Element) currentLap.getParentNode())
 							.getElementsByTagName("MaximumSpeed").item(0))
 							.setTextContent(maxSpeed.toString());
+
+					totalTimeSeconds = Double.parseDouble(((Element) currentLap
+							.getParentNode())
+							.getElementsByTagName("TotalTimeSeconds").item(0)
+							.getTextContent());
+					avgSpeed = ((maxDistance - lastMaxDistance) / totalTimeSeconds);
+					(((Element) currentLap.getParentNode())
+							.getElementsByTagName("AvgSpeed").item(0))
+							.setTextContent(avgSpeed.toString());
 
 					maxSpeed = 0;
 					lastMaxDistance = maxDistance;
@@ -317,7 +337,7 @@ public class Main {
 							newTrackpoint.appendChild(newPosition);
 
 							currentLap.appendChild(newTrackpoint);
-							System.out.println(tempDate);
+							// System.out.println(tempDate);
 						}
 
 						heartRateData.remove(tempDate);
@@ -331,7 +351,7 @@ public class Main {
 						importNode = garminDoc.importNode(nList.item(counter),
 								true);
 						currentLap.appendChild(importNode);
-						System.out.println(calendar.getTime());
+						// System.out.println(calendar.getTime());
 
 						maxDistance = Integer
 								.parseInt(((Element) currentElement
@@ -354,6 +374,18 @@ public class Main {
 					.getElementsByTagName("DistanceMeters").item(0))
 					.setTextContent((new Integer(maxDistance - lastMaxDistance))
 							.toString());
+
+			(((Element) currentLap.getParentNode())
+					.getElementsByTagName("MaximumSpeed").item(0))
+					.setTextContent(maxSpeed.toString());
+
+			totalTimeSeconds = Double.parseDouble(((Element) currentLap
+					.getParentNode()).getElementsByTagName("TotalTimeSeconds")
+					.item(0).getTextContent());
+			avgSpeed = ((maxDistance - lastMaxDistance) / totalTimeSeconds);
+			(((Element) currentLap.getParentNode())
+					.getElementsByTagName("AvgSpeed").item(0))
+					.setTextContent(avgSpeed.toString());
 
 			// saving file
 			garminDoc.normalizeDocument();

@@ -20,7 +20,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9631620252562486</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -1722,7 +1722,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9433726196731977</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -3344,7 +3344,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9043201199512698</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -4206,7 +4206,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9290271132376395</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -5248,7 +5248,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.923357792367377</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -6410,7 +6410,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9404541467693207</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -7252,7 +7252,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.8374502952162912</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -7934,7 +7934,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.1951313137775503</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -25605,7 +25605,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.062415978490493566</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -36532,7 +36532,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9570552147239264</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -37694,7 +37694,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.7367919212932865</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -38636,7 +38636,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.8163265306122449</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -39638,7 +39638,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.8852768304186924</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -40760,7 +40760,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.7625172255397336</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -42082,7 +42082,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.8230088495575221</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -43024,7 +43024,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.052993090516274995</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -51016,7 +51016,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.8183306055646481</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -53158,7 +53158,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.9448529411764706</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
@@ -54267,7 +54267,7 @@
       <Lap StartTime="2013-09-11T17:35:19Z">
         <TotalTimeSeconds>221.9100000</TotalTimeSeconds>
         <DistanceMeters>138</DistanceMeters>
-        <MaximumSpeed>0.0000000</MaximumSpeed>
+        <MaximumSpeed>194</MaximumSpeed>
         <Calories>11</Calories>
         <AverageHeartRateBpm xsi:type="HeartRateInBeatsPerMinute_t">
           <Value>119</Value>
@@ -54280,7 +54280,7 @@
         
         <Extensions>
           <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-            <AvgSpeed>0.0000000</AvgSpeed>
+            <AvgSpeed>0.621873732594295</AvgSpeed>
           </LX>
         </Extensions>
       <Track>
