@@ -3,6 +3,8 @@ package miCoach;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -11,6 +13,7 @@ import java.util.Map.Entry;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -27,6 +30,11 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
+		if (args.length < 2) {
+			System.out
+					.println("Bitte zuerst miCoach File dann garminFile angeben");
+			System.exit(0);
+		}
 		String miCoachFile = args[0];
 		String garminFile = args[1];
 		String storeFile = "converted.tcx";
@@ -37,6 +45,13 @@ public class Main {
 		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/garmin.tcx";
 		// String storeFile =
 		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
+
+		// String miCoachFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/micoach.tcx";
+		// String garminFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/garmin.tcx";
+		// String storeFile =
+		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/converted.tcx";
 
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
@@ -169,12 +184,18 @@ public class Main {
 			Integer maxDistance = 0;
 			int lapCounter = 0;
 			Date nextLapDate = null;
+			Integer maxSpeed = 0;
+			Integer currentSpeed = null;
 			Element currentLap = (Element) ((Entry) lapData.entrySet()
 					.toArray()[lapCounter]).getValue();
 			if (lapLength > 1) {
 				nextLapDate = (Date) ((Entry) lapData.entrySet().toArray()[lapCounter + 1])
 						.getKey();
 			}
+			Date tempDate = null;
+			Double totalTimeSeconds = 0.0;
+			Element elementBefore = (Element) nList.item(0);
+			Double avgSpeed = 0.0;
 			while (counter < nList.getLength()) {
 				currentElement = (Element) nList.item(counter);
 				dateString = currentElement.getElementsByTagName("Time")
@@ -190,6 +211,14 @@ public class Main {
 
 				heartRateValue = heartRateData.get(calendar.getTime());
 
+				currentSpeed = Integer.parseInt(((Element) currentElement
+						.getElementsByTagName("RunCadence").item(0))
+						.getTextContent());
+
+				if (currentSpeed > maxSpeed) {
+					maxSpeed = currentSpeed;
+				}
+
 				// lap zeigen aendern
 				if (nextLapDate != null
 						&& calendar.getTime().after(nextLapDate)) {
@@ -197,6 +226,21 @@ public class Main {
 							.getElementsByTagName("DistanceMeters").item(0))
 							.setTextContent((new Integer(maxDistance
 									- lastMaxDistance)).toString());
+
+					(((Element) currentLap.getParentNode())
+							.getElementsByTagName("MaximumSpeed").item(0))
+							.setTextContent(maxSpeed.toString());
+
+					totalTimeSeconds = Double.parseDouble(((Element) currentLap
+							.getParentNode())
+							.getElementsByTagName("TotalTimeSeconds").item(0)
+							.getTextContent());
+					avgSpeed = ((maxDistance - lastMaxDistance) / totalTimeSeconds);
+					(((Element) currentLap.getParentNode())
+							.getElementsByTagName("AvgSpeed").item(0))
+							.setTextContent(avgSpeed.toString());
+
+					maxSpeed = 0;
 					lastMaxDistance = maxDistance;
 					lapCounter++;
 					currentLap = (Element) ((Entry) lapData.entrySet()
@@ -209,22 +253,121 @@ public class Main {
 					}
 				}
 
+				// herzdaten setzen
 				if (heartRateValue != null) {
-					((Element) ((Element) currentElement.getElementsByTagName(
-							"HeartRateBpm").item(0)).getElementsByTagName(
-							"Value").item(0)).setTextContent(heartRateValue
-							.toString());
 
-					importNode = garminDoc
-							.importNode(nList.item(counter), true);
-					currentLap.appendChild(importNode);
+					tempDate = ((Date) ((Entry) heartRateData.entrySet()
+							.toArray()[0]).getKey());
 
-					maxDistance = Integer.parseInt(((Element) currentElement
-							.getElementsByTagName("DistanceMeters").item(0))
-							.getTextContent());
+					// trackpoint von garmin uebernehmen
+					if (tempDate.before(calendar.getTime())) {
 
+						if (Integer.parseInt(currentElement
+								.getElementsByTagName("RunCadence").item(0)
+								.getTextContent()) == 0
+								&& Integer.parseInt(elementBefore
+										.getElementsByTagName("RunCadence")
+										.item(0).getTextContent()) == 0) {
+
+							// add data
+							Element newTrackpoint = garminDoc
+									.createElement("Trackpoint");
+
+							DateFormat dateFormater = new SimpleDateFormat(
+									"YYYY-MM-dd'T'HH:mm:ss");
+							Element newTime = garminDoc.createElement("Time");
+							newTime.setTextContent(dateFormater
+									.format(tempDate));
+							newTrackpoint.appendChild(newTime);
+
+							Element newDistanceMeters = garminDoc
+									.createElement("DistanceMeters");
+							newDistanceMeters.setTextContent(maxDistance
+									.toString());
+							newTrackpoint.appendChild(newDistanceMeters);
+
+							Element newHeartRateBpm = garminDoc
+									.createElement("HeartRateBpm");
+							Element newHeartRateValue = garminDoc
+									.createElement("Value");
+							newHeartRateValue.setTextContent(heartRateData.get(
+									tempDate).toString());
+							newHeartRateBpm.setAttribute("xsi:type",
+									"HeartRateInBeatsPerMinute_t");
+							newHeartRateBpm.appendChild(newHeartRateValue);
+							newTrackpoint.appendChild(newHeartRateBpm);
+
+							Element newExtensions = garminDoc
+									.createElement("Extensions");
+							Element newFatCalories = garminDoc
+									.createElement("FatCalories");
+							Element newValue = garminDoc.createElement("Value");
+							Element newActivityTrackpointExtension = garminDoc
+									.createElement("ActivityTrackpointExtension");
+							Element newRunCadence = garminDoc
+									.createElement("RunCadence");
+							newFatCalories
+									.setAttribute("xmlns",
+											"http://www.garmin.com/xmlschemas/FatCalories/v1");
+							newActivityTrackpointExtension
+									.setAttribute("xmlns",
+											"http://www.garmin.com/xmlschemas/ActivityExtension/v1");
+							newActivityTrackpointExtension.setAttribute(
+									"SourceSensor", "Footpod");
+							newValue.setTextContent("0");
+							newRunCadence.setTextContent("0");
+							newFatCalories.appendChild(newValue);
+							newActivityTrackpointExtension
+									.appendChild(newRunCadence);
+							newExtensions.appendChild(newFatCalories);
+							newExtensions
+									.appendChild(newActivityTrackpointExtension);
+							newTrackpoint.appendChild(newExtensions);
+
+							Element newPosition = garminDoc
+									.createElement("Position");
+							Element newLatitudeDegrees = garminDoc
+									.createElement("LatitudeDegrees");
+							Element newLongitudeDegrees = garminDoc
+									.createElement("LongitudeDegrees");
+							newLatitudeDegrees.setTextContent("0.0");
+							newLongitudeDegrees.setTextContent("0.0");
+							newPosition.appendChild(newLatitudeDegrees);
+							newPosition.appendChild(newLongitudeDegrees);
+							newTrackpoint.appendChild(newPosition);
+
+							currentLap.appendChild(newTrackpoint);
+							System.out.println(tempDate);
+						}
+
+						heartRateData.remove(tempDate);
+
+					} else {
+						((Element) ((Element) currentElement
+								.getElementsByTagName("HeartRateBpm").item(0))
+								.getElementsByTagName("Value").item(0))
+								.setTextContent(heartRateValue.toString());
+
+						importNode = garminDoc.importNode(nList.item(counter),
+								true);
+						currentLap.appendChild(importNode);
+						System.out.println(calendar.getTime());
+
+						maxDistance = Integer
+								.parseInt(((Element) currentElement
+										.getElementsByTagName("DistanceMeters")
+										.item(0)).getTextContent());
+
+						heartRateData.remove(calendar.getTime());
+
+						elementBefore = (Element) nList.item(counter);
+						counter++;
+
+					}
+				} else {
+					elementBefore = (Element) nList.item(counter);
+					counter++;
 				}
-				counter++;
 			}
 
 			(((Element) currentLap.getParentNode())
@@ -232,10 +375,24 @@ public class Main {
 					.setTextContent((new Integer(maxDistance - lastMaxDistance))
 							.toString());
 
+			(((Element) currentLap.getParentNode())
+					.getElementsByTagName("MaximumSpeed").item(0))
+					.setTextContent(maxSpeed.toString());
+
+			totalTimeSeconds = Double.parseDouble(((Element) currentLap
+					.getParentNode()).getElementsByTagName("TotalTimeSeconds")
+					.item(0).getTextContent());
+			avgSpeed = ((maxDistance - lastMaxDistance) / totalTimeSeconds);
+			(((Element) currentLap.getParentNode())
+					.getElementsByTagName("AvgSpeed").item(0))
+					.setTextContent(avgSpeed.toString());
+
 			// saving file
+			garminDoc.normalizeDocument();
 			TransformerFactory transformerFactory = TransformerFactory
 					.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 			DOMSource source = new DOMSource(garminDoc);
 			StreamResult result = new StreamResult(new File(storeFile));
 			transformer.transform(source, result);
