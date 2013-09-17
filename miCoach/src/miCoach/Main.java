@@ -30,13 +30,31 @@ import org.xml.sax.SAXException;
 public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) {
+		String miCoachFile = null;
+		String garminFile = null;
+		boolean onlyDistance = false;
+
 		if (args.length < 2) {
 			System.out
-					.println("Bitte zuerst miCoach File dann garminFile angeben");
+					.println("Bitte zuerst micoach file dann garminfile angeben");
+			System.out.println("Falls nur Distance Daten als erstes -d");
 			System.exit(0);
 		}
-		String miCoachFile = args[0];
-		String garminFile = args[1];
+		if (args[0].equals("-d")) {
+			if (args.length < 3) {
+				System.out
+						.println("Bitte zuerst micoach file dann garminfile angeben");
+				System.out.println("Falls nur Distance Daten als erstes -d");
+				System.exit(0);
+			}
+			miCoachFile = args[1];
+			garminFile = args[2];
+			onlyDistance = true;
+		} else {
+			miCoachFile = args[0];
+			garminFile = args[1];
+		}
+
 		String storeFile = "converted.tcx";
 
 		// String miCoachFile =
@@ -46,15 +64,28 @@ public class Main {
 		// String storeFile =
 		// "/home/gugugs/miCoach_dev/git/miCoachDev/data/squash2/converted.tcx";
 
-		// String miCoachFile =
-		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/micoach.tcx";
-		// String garminFile =
-		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/garmin.tcx";
-		// String storeFile =
-		// "/home/gugugs/miCoachDev/git/miCoach/data/squash2/converted.tcx";
+		// String micoachfile =
+		// "/home/gugugs/micoachdev/git/micoach/data/rimbach/micoach.tcx";
+		// String garminfile =
+		// "/home/gugugs/micoachdev/git/micoach/data/rimbach/garmin.tcx";
+		// String storefile =
+		// "/home/gugugs/micoachdev/git/micoach/data/rimbach/converted.tcx";
 
 		LinkedHashMap<Date, Integer> heartRateData = new LinkedHashMap<>();
 		LinkedHashMap<Date, Element> lapData = new LinkedHashMap<>();
+		Element currentElement = null;
+		String dateString = null;
+
+		int year = 0;
+		int month = 0;
+		int day = 0;
+		int hours = 0;
+		int minutes = 0;
+		int seconds = 0;
+		Calendar calendar = Calendar.getInstance();
+
+		int counter = 0;
+		Integer heartrate = null;
 
 		try {
 			// make builders
@@ -71,11 +102,6 @@ public class Main {
 			// get heartrate Data
 			NodeList trackpointNodeList = garminDoc
 					.getElementsByTagName("Trackpoint");
-			int counter = 0;
-			int year, month, day, hours, minutes, seconds, heartrate;
-			Calendar calendar = Calendar.getInstance();
-			Element currentElement = null;
-			String dateString = null;
 			while (counter < trackpointNodeList.getLength()) {
 				currentElement = (Element) trackpointNodeList.item(counter);
 				dateString = currentElement.getElementsByTagName("Time")
@@ -96,6 +122,10 @@ public class Main {
 							.getTextContent());
 
 					heartRateData.put(calendar.getTime(), heartrate);
+				} else {
+					if (onlyDistance == true) {
+						heartRateData.put(calendar.getTime(), 0);
+					}
 				}
 
 				counter++;
